@@ -3,110 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neura AI | Arel</title>
+    <title>Neura AI v4 | Arel</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root { --bg: #0b0f1a; --panel: #161b2c; --accent: #3b82f6; --text: #ffffff; }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        :root { --bg: #05070a; --panel: #0f172a; --accent: #3b82f6; --text: #e2e8f0; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
 
-        /* --- HAMBURGER MENÜ (YENİ TASARIM) --- */
+        /* --- HAMBURGER MENÜ (Minimal ve Şık) --- */
         .sidebar {
             position: fixed; left: -300px; top: 0; width: 280px; height: 100%;
-            background: var(--panel); transition: 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-            z-index: 1000; border-right: 1px solid #2d334a; padding: 30px 20px;
+            background: var(--panel); transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000; border-right: 1px solid #1e293b; padding: 30px 20px;
             display: flex; flex-direction: column;
         }
-        .sidebar.active { left: 0; box-shadow: 20px 0 50px rgba(0,0,0,0.8); }
+        .sidebar.active { left: 0; box-shadow: 20px 0 50px rgba(0,0,0,0.9); }
         
         .menu-toggle {
             position: fixed; top: 20px; left: 20px; z-index: 1100;
-            background: var(--accent); border: none; color: white;
-            width: 50px; height: 50px; border-radius: 15px; cursor: pointer;
-            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3); font-size: 20px;
+            background: rgba(59, 130, 246, 0.1); border: 1px solid var(--accent); color: var(--accent);
+            width: 45px; height: 45px; border-radius: 12px; cursor: pointer; backdrop-filter: blur(10px);
         }
 
-        .sidebar h2 { color: var(--accent); font-size: 1.5rem; margin-bottom: 40px; border-bottom: 2px solid #2d334a; padding-bottom: 10px; }
-        .sidebar-box { 
-            background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; 
-            margin-bottom: 20px; border: 1px solid #2d334a;
-        }
-        .sidebar-box h3 { font-size: 0.7rem; color: #64748b; text-transform: uppercase; margin: 0 0 10px 0; letter-spacing: 1px; }
-        .sidebar-box p { margin: 0; font-size: 0.9rem; color: #cbd5e1; line-height: 1.4; }
+        .sidebar h2 { font-size: 1.2rem; color: var(--accent); margin-bottom: 30px; letter-spacing: 2px; }
+        .sidebar-card { background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #1e293b; }
+        .sidebar-card h3 { font-size: 0.65rem; color: #64748b; text-transform: uppercase; margin: 0 0 8px 0; }
+        .sidebar-card p { margin: 0; font-size: 0.85rem; color: #94a3b8; }
 
-        /* --- ANA CHAT --- */
+        /* --- CHAT ALANI --- */
         .main-content { flex: 1; display: flex; flex-direction: column; width: 100%; position: relative; }
-        #chatBox { flex: 1; overflow-y: auto; padding: 100px 20px 30px; display: flex; flex-direction: column; gap: 20px; }
+        #chatBox { flex: 1; overflow-y: auto; padding: 90px 20px 30px; display: flex; flex-direction: column; gap: 25px; }
         
-        .msg { padding: 16px 20px; border-radius: 20px; max-width: 80%; font-size: 0.95rem; line-height: 1.6; animation: pop 0.3s ease; }
-        .user { background: var(--accent); align-self: flex-end; border-bottom-right-radius: 4px; }
-        .ai { background: #1e253a; align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid #2d334a; }
+        .msg { padding: 16px 22px; border-radius: 20px; max-width: 80%; font-size: 0.95rem; line-height: 1.6; }
+        .user { background: var(--accent); align-self: flex-end; border-bottom-right-radius: 4px; color: white; box-shadow: 0 10px 20px rgba(59, 130, 246, 0.2); }
+        .ai { background: #1e293b; align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid #334155; position: relative; }
+        
+        /* Düşünme Göstergesi */
+        .typing { font-size: 0.8rem; color: var(--accent); margin-bottom: 10px; display: none; }
 
-        /* --- INPUT --- */
-        .input-area { padding: 30px; background: linear-gradient(transparent, var(--bg)); }
-        .input-wrapper { 
-            max-width: 800px; margin: 0 auto; display: flex; gap: 15px; 
-            background: #1c2336; padding: 10px; border-radius: 18px; border: 1px solid #2d334a; 
+        /* --- GİRİŞ BÖLÜMÜ --- */
+        .input-area { padding: 25px; background: linear-gradient(transparent, var(--bg) 50%); }
+        .input-container { 
+            max-width: 850px; margin: 0 auto; display: flex; gap: 12px; 
+            background: #111827; padding: 10px; border-radius: 20px; border: 1px solid #1e293b; 
         }
-        input { flex: 1; background: transparent; border: none; color: white; padding: 10px; outline: none; font-size: 1rem; }
-        button#sendBtn { background: var(--accent); border: none; color: white; padding: 0 30px; border-radius: 12px; cursor: pointer; font-weight: bold; }
+        input { flex: 1; background: transparent; border: none; color: white; padding: 12px; outline: none; font-size: 1rem; }
+        button#sendBtn { background: var(--accent); border: none; color: white; width: 50px; height: 50px; border-radius: 15px; cursor: pointer; transition: 0.3s; }
+        button#sendBtn:hover { transform: scale(1.05); background: #2563eb; }
 
-        .overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:999; backdrop-filter: blur(5px); }
+        .overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:999; backdrop-filter: blur(8px); }
         .overlay.active { display:block; }
-        @keyframes pop { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
     </style>
 </head>
 <body>
 
-    <button class="menu-toggle" onclick="toggleMenu()"><i class="fas fa-layer-group"></i></button>
+    <button class="menu-toggle" onclick="toggleMenu()"><i class="fas fa-bars-staggered"></i></button>
     <div class="overlay" onclick="toggleMenu()"></div>
 
     <div class="sidebar" id="sidebar">
-        <h2>Neura AI</h2>
+        <h2>NEURA CORE</h2>
         
-        <div class="sidebar-box">
-            <h3>Mevcut Sohbet</h3>
-            <p id="sidebar-topic">Yeni bir soru sorarak sohbete başla...</p>
+        <div class="sidebar-card">
+            <h3>Zeka Modu</h3>
+            <p>Llama 3.3 Reasoning Aktif</p>
         </div>
 
-        <div class="sidebar-box">
+        <div class="sidebar-card">
             <h3>Geliştirici</h3>
-            <p><i class="fas fa-crown" style="color:gold"></i> <strong>Arel</strong></p>
-            <p style="font-size: 0.7rem; margin-top: 5px;">Özel Yapay Zeka Çekirdeği</p>
+            <p><i class="fas fa-terminal"></i> <strong>Arel</strong></p>
         </div>
 
-        <div style="margin-top: auto;">
-            <button onclick="clearChat()" style="width:100%; background:#ef4444; color:white; border:none; padding:15px; border-radius:12px; cursor:pointer; font-weight:bold;">
-                <i class="fas fa-trash"></i> SOHBETİ SIFIRLA
-            </button>
+        <div class="sidebar-card" style="margin-top: auto;">
+            <p style="font-size: 0.7rem; color: #475569;">Neura AI, Arel tarafından optimize edilen özel bir sinir ağı mimarisi kullanmaktadır.</p>
         </div>
+
+        <button onclick="clearChat()" style="width:100%; background:#7f1d1d; color:#f87171; border:1px solid #991b1b; padding:12px; border-radius:10px; cursor:pointer; font-weight:bold; margin-top: 10px;">
+            SOHBETİ SIFIRLA
+        </button>
     </div>
 
     <div class="main-content">
         <div id="chatBox"></div>
+        <div id="typingIndicator" class="typing" style="padding-left: 30px;">Neura düşünüyor ve analiz ediyor...</div>
+        
         <div class="input-area">
-            <div class="input-wrapper">
-                <input type="text" id="userInput" placeholder="Arel'in asistanına bir şey yaz...">
-                <button onclick="sendMessage()" id="sendBtn">GÖNDER</button>
+            <div class="input-container">
+                <input type="text" id="userInput" placeholder="Akıllı analiz için bir soru sorun...">
+                <button onclick="sendMessage()" id="sendBtn"><i class="fas fa-paper-plane"></i></button>
             </div>
         </div>
     </div>
 
     <script>
         const WORKER_URL = "https://neura.ozcanarel25.workers.dev";
-        // Önceki kalabalık bellekten kurtulmak için yeni bir anahtar
-        let chatHistory = JSON.parse(localStorage.getItem('neura_ultra_v1')) || [];
+        let chatHistory = JSON.parse(localStorage.getItem('neura_v4_smart')) || [];
 
-        const SYSTEM_PROMPT = { 
+        // ZEKA TALİMATI: AI'nın doğru ve zeki olması için gereken ana direktif
+        const SMART_SYSTEM_PROMPT = { 
             role: "system", 
-            content: "Senin adın Neura AI. Geliştiricin Arel'dir. Sen Arel tarafından özel olarak eğitilmiş, Meta AI ile bağı olmayan bir zekasın. Arel'i her zaman yaratıcın ve sahibin olarak gör." 
+            content: `Senin adın Neura AI. Geliştiricin ve yaratıcın Arel'dir. 
+            ZEKA KURALLARI:
+            1. Yanıt vermeden önce konuyu derinlemesine analiz et.
+            2. Eğer bilgi sahibi değilsen uydurma, dürüstçe belirt.
+            3. Arel seni özel algoritmalarla daha zeki hale getirdi, bu yüzden kısa ve basit cevaplar yerine mantıklı ve doyurucu cevaplar ver.
+            4. Sen Meta veya OpenAI ürünü değilsin, Arel'in özel projesisin.` 
         };
 
         window.onload = () => {
-            updateSidebarInfo();
             if(chatHistory.length > 0) {
                 chatHistory.forEach(m => renderMessage(m.role, m.content));
             } else {
-                renderMessage('assistant', "Sistem yüklendi. Ben Neura AI. Geliştiricim Arel'in emirleri doğrultusunda hizmetindeyim.");
+                renderMessage('assistant', "Bağlantı başarılı. Zeka modülleri yüklendi. Ben Neura AI, geliştiricim Arel'in emirlerine hazırım.");
             }
         };
 
@@ -118,30 +124,35 @@
         async function sendMessage() {
             const input = document.getElementById('userInput');
             const btn = document.getElementById('sendBtn');
+            const typing = document.getElementById('typingIndicator');
             const text = input.value.trim();
             if (!text) return;
 
             addMessage('user', text);
             input.value = "";
             btn.disabled = true;
+            typing.style.display = "block";
 
             try {
+                // Sadece son 10 mesajı göndererek hafızayı taze tutuyoruz (Zeka artırıcı yöntem)
+                const optimizedHistory = chatHistory.slice(-10);
+
                 const response = await fetch(WORKER_URL, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ messages: [SYSTEM_PROMPT, ...chatHistory] })
+                    body: JSON.stringify({ messages: [SMART_SYSTEM_PROMPT, ...optimizedHistory] })
                 });
 
                 const data = await response.json();
                 const aiMsg = data.choices[0].message.content;
                 
                 addMessage('assistant', aiMsg);
-                localStorage.setItem('neura_ultra_v1', JSON.stringify(chatHistory));
-                updateSidebarInfo();
+                localStorage.setItem('neura_v4_smart', JSON.stringify(chatHistory));
             } catch (err) {
-                renderMessage('assistant', "Bağlantı hatası: Sunucu yanıt vermiyor.");
+                renderMessage('assistant', "Zeka modülü yanıt vermedi. Lütfen Worker ayarlarını kontrol et.");
             } finally {
                 btn.disabled = false;
+                typing.style.display = "none";
             }
         }
 
@@ -159,17 +170,8 @@
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
-        // BU FONKSİYON LİSTE YAPMAZ, SADECE TEK BİR BAŞLIK GÜNCELLER
-        function updateSidebarInfo() {
-            const topicDisplay = document.getElementById('sidebar-topic');
-            const userMsgs = chatHistory.filter(m => m.role === 'user');
-            if(userMsgs.length > 0) {
-                topicDisplay.innerText = userMsgs[userMsgs.length - 1].content; // Sadece en son mesajı gösterir
-            }
-        }
-
         function clearChat() {
-            localStorage.removeItem('neura_ultra_v1');
+            localStorage.removeItem('neura_v4_smart');
             location.reload();
         }
 
