@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neura AI | Ultimate</title>
+    <title>Neura AI | Privacy & Voice</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
@@ -15,100 +15,99 @@
             --bg: #05070a; --panel: #0f172a; --accent: #3b82f6; --text: #e2e8f0; 
             --msg-ai: #1e293b; --border: #1e293b; --input-bg: #111827; --radius: 16px;
         }
-        
         body.light-mode {
             --bg: #f8fafc; --panel: #ffffff; --accent: #2563eb; --text: #1e293b;
             --msg-ai: #f1f5f9; --border: #e2e8f0; --input-bg: #ffffff;
         }
-
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; transition: 0.3s; }
-
-        /* Animasyonlar */
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes typing { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
-        .btn-anim { transition: all 0.2s; }
-        .btn-anim:hover { transform: scale(1.05); filter: brightness(1.2); cursor: pointer; }
-        .btn-anim:active { transform: scale(0.95); }
-
-        /* Sidebar & Layout */
-        .sidebar { position: fixed; left: -100%; top: 0; width: 85%; max-width: 300px; height: 100%; background: var(--panel); transition: 0.4s; z-index: 2000; border-right: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; }
-        .sidebar.active { left: 0; box-shadow: 20px 0 60px rgba(0,0,0,0.5); }
-        
-        @media (min-width: 1024px) {
-            .sidebar { position: relative; left: 0; width: 300px; }
-            .menu-toggle { display: none; }
+        body.incognito-mode {
+            --bg: #1a1a1a; --panel: #2d2d2d; --accent: #9ca3af; --text: #ffffff;
+            --msg-ai: #404040; --border: #525252; --input-bg: #262626;
         }
 
-        .main-content { flex: 1; display: flex; flex-direction: column; width: 100%; position: relative; }
-        #chatBox { flex: 1; overflow-y: auto; padding: 80px 20px 30px; display: flex; flex-direction: column; gap: 15px; scroll-behavior: smooth; }
+        * { box-sizing: border-box; }
+        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; transition: 0.3s; }
+
+        .sidebar { position: fixed; left: -100%; top: 0; width: 85%; max-width: 300px; height: 100%; background: var(--panel); transition: 0.4s; z-index: 2000; border-right: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; }
+        .sidebar.active { left: 0; }
         
-        /* Mesaj Balonları & Markdown */
-        .msg { padding: 14px 18px; border-radius: var(--radius); max-width: 85%; font-size: 0.95rem; animation: fadeIn 0.3s ease; position: relative; }
+        @media (min-width: 1024px) { .sidebar { position: relative; left: 0; width: 300px; } .menu-toggle { display: none; } }
+
+        .main-content { flex: 1; display: flex; flex-direction: column; position: relative; }
+        #chatBox { flex: 1; overflow-y: auto; padding: 80px 20px 30px; display: flex; flex-direction: column; gap: 15px; }
+        
+        .msg { padding: 14px 18px; border-radius: var(--radius); max-width: 85%; font-size: 0.95rem; position: relative; animation: fadeIn 0.3s; }
         .user { background: var(--accent); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
         .ai { background: var(--msg-ai); color: var(--text); align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid var(--border); }
-        .msg pre { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; overflow-x: auto; font-family: monospace; }
-        
-        /* Ses Butonu */
-        .tts-btn { position: absolute; bottom: -20px; left: 5px; font-size: 0.8rem; cursor: pointer; color: var(--accent); opacity: 0.7; transition: 0.3s; }
-        .tts-btn:hover { opacity: 1; }
 
-        /* Yazıyor Göstergesi */
-        .typing-indicator { display: none; align-items: center; gap: 4px; padding: 10px 15px; background: var(--msg-ai); border-radius: 20px; width: fit-content; margin-bottom: 15px; }
-        .dot { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; animation: typing 1s infinite; }
+        /* Sohbet Silme Butonu */
+        .delete-btn { color: #ef4444; opacity: 0; transition: 0.3s; cursor: pointer; margin-left: 10px; }
+        .session-item:hover .delete-btn { opacity: 1; }
 
-        /* Input Alanı */
-        .input-area { padding: 20px; background: var(--bg); }
-        .input-wrapper { max-width: 900px; margin: 0 auto; display: flex; gap: 10px; background: var(--input-bg); padding: 10px; border-radius: 25px; border: 1px solid var(--border); align-items: center; }
-        input { flex: 1; background: transparent; border: none; color: var(--text); padding: 10px; outline: none; font-size: 1rem; }
-        
+        /* Üst Bar & Modlar */
         .top-bar { position: absolute; top: 0; width: 100%; height: 70px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; background: rgba(var(--bg), 0.7); backdrop-filter: blur(15px); z-index: 1000; border-bottom: 1px solid var(--border); }
-        
-        .overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1500; }
-        .overlay.active { display:block; }
+        .incognito-badge { display: none; background: #525252; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; }
+        body.incognito-mode .incognito-badge { display: inline-block; }
+
+        /* Yazıyor... */
+        .typing-indicator { display: none; padding: 10px 15px; background: var(--msg-ai); border-radius: 20px; width: fit-content; margin-bottom: 15px; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body class="dark-mode">
 
     <div id="loginScreen" style="position:fixed; inset:0; background:var(--bg); z-index:3000; display:flex; flex-direction:column; align-items:center; justify-content:center;">
-        <h1 style="color:var(--accent); font-size:3rem; letter-spacing:8px;">NEURA</h1>
-        <button class="btn-anim" onclick="googleLogin()" style="background:var(--accent); color:white; padding:15px 40px; border-radius:50px; border:none; font-weight:bold; margin-top:20px;">GİRİŞ YAP</button>
+        <h1 style="color:var(--accent); font-size:3rem;">NEURA</h1>
+        <button onclick="googleLogin()" style="background:var(--accent); color:white; padding:15px 40px; border-radius:50px; border:none; cursor:pointer;">GİRİŞ YAP</button>
     </div>
 
-    <div class="overlay" onclick="closeSidebar()"></div>
-
     <div class="sidebar" id="sidebar">
-        <div id="userInfo" style="display:flex; align-items:center; gap:10px; margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:15px;"></div>
-        <button class="btn-anim" onclick="createNewChat()" style="width:100%; background:var(--accent); color:white; border:none; padding:14px; border-radius:12px; font-weight:bold;">+ Yeni Sohbet</button>
-        <div id="sessionList" style="flex:1; overflow-y:auto; margin-top:20px;"></div>
-        <button class="btn-anim" onclick="auth.signOut()" style="background:#ef4444; color:white; border:none; padding:10px; border-radius:10px; margin-top:10px;">Çıkış Yap</button>
+        <div id="userInfo" style="margin-bottom:20px; padding-bottom:15px; border-bottom:1px solid var(--border);"></div>
+        
+        <div style="display:flex; gap:10px; margin-bottom:15px;">
+            <button onclick="createNewChat()" style="flex:1; background:var(--accent); color:white; border:none; padding:12px; border-radius:12px; font-weight:bold; cursor:pointer;">+ Yeni</button>
+            <button onclick="toggleIncognito()" id="incognitoBtn" title="Gizli Sohbet" style="background:var(--msg-ai); color:var(--text); border:1px solid var(--border); padding:10px; border-radius:12px; cursor:pointer;"><i class="fas fa-user-secret"></i></button>
+        </div>
+
+        <div id="sessionList" style="flex:1; overflow-y:auto;"></div>
+        
+        <div style="margin-top:10px;">
+            <select id="voiceSelect" style="width:100%; padding:8px; border-radius:8px; background:var(--msg-ai); color:var(--text); border:1px solid var(--border); margin-bottom:10px;">
+                <option value="0">Ses 1 (Doğal)</option>
+                <option value="1">Ses 2 (Dinamik)</option>
+                <option value="2">Ses 3 (Derin)</option>
+                <option value="3">Ses 4 (İnce)</option>
+                <option value="4">Ses 5 (Robotik)</option>
+            </select>
+            <button onclick="auth.signOut()" style="width:100%; background:#ef4444; color:white; border:none; padding:10px; border-radius:10px;">Çıkış Yap</button>
+        </div>
     </div>
 
     <div class="main-content">
         <div class="top-bar">
-            <button class="menu-toggle btn-anim" onclick="openSidebar()" style="background:none; border:none; color:var(--text); font-size:1.5rem;"><i class="fas fa-bars"></i></button>
-            <span style="font-weight:bold; color:var(--accent);">NEURA AI v7</span>
-            <button class="btn-anim" onclick="toggleTheme()" style="background:none; border:none; color:var(--text); font-size:1.3rem;"><i id="themeIcon" class="fas fa-moon"></i></button>
+            <button onclick="document.getElementById('sidebar').classList.toggle('active')" style="background:none; border:none; color:var(--text); font-size:1.2rem;"><i class="fas fa-bars"></i></button>
+            <div>
+                <span style="font-weight:bold; color:var(--accent);">NEURA AI</span>
+                <span class="incognito-badge"><i class="fas fa-user-secret"></i> GİZLİ</span>
+            </div>
+            <button onclick="toggleTheme()" style="background:none; border:none; color:var(--text);"><i id="themeIcon" class="fas fa-moon"></i></button>
         </div>
 
         <div id="chatBox"></div>
         
         <div class="typing-indicator" id="typingIndicator">
-            <div class="dot"></div><div class="dot" style="animation-delay:0.2s"></div><div class="dot" style="animation-delay:0.4s"></div>
-            <span style="font-size:0.8rem; margin-left:8px;">Neura düşünüyor...</span>
+            <span style="font-size:0.8rem;">Neura düşünüyor...</span>
         </div>
 
-        <div class="input-area">
-            <div class="input-wrapper">
-                <button class="btn-anim" onclick="startVoiceRecognition()" style="background:none; border:none; color:var(--accent); font-size:1.2rem;"><i class="fas fa-microphone" id="micIcon"></i></button>
-                <input type="text" id="userInput" placeholder="Mesajınızı buraya konuşun veya yazın...">
-                <button class="btn-anim" onclick="sendMessage()" style="background:var(--accent); border:none; color:white; width:45px; height:45px; border-radius:50%;"><i class="fas fa-paper-plane"></i></button>
+        <div class="input-area" style="padding:20px;">
+            <div style="display:flex; gap:10px; background:var(--input-bg); padding:10px; border-radius:25px; border:1px solid var(--border); align-items:center;">
+                <input type="text" id="userInput" placeholder="Mesaj yazın..." style="flex:1; background:transparent; border:none; color:var(--text); outline:none;">
+                <button onclick="sendMessage()" style="background:var(--accent); border:none; color:white; width:40px; height:40px; border-radius:50%; cursor:pointer;"><i class="fas fa-paper-plane"></i></button>
             </div>
         </div>
     </div>
 
     <script>
-        // Görsellerdeki bilgilerle güncellendi
         const firebaseConfig = {
             apiKey: "AIzaSyAstwONxkqv8M-DAUjZ2y5RCEI9h2dEtiw",
             authDomain: "neura-ai-c7b37.firebaseapp.com",
@@ -123,75 +122,70 @@
         const db = firebase.firestore();
         const WORKER_URL = "https://neura.ozcanarel25.workers.dev";
 
-        let currentUser = null, sessions = [], currentSessionId = null;
+        let currentUser = null, sessions = [], currentSessionId = null, isIncognito = false;
 
-        // --- SESLİ YAZMA (Speech to Text) ---
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        const recognition = SpeechRecognition ? new SpeechRecognition() : null;
-        if(recognition) {
-            recognition.lang = 'tr-TR';
-            recognition.onresult = (e) => { document.getElementById('userInput').value = e.results[0][0].transcript; document.getElementById('micIcon').style.color = 'var(--accent)'; };
+        // --- GİZLİ SOHBET FONKSİYONU ---
+        function toggleIncognito() {
+            isIncognito = !isIncognito;
+            document.body.classList.toggle('incognito-mode', isIncognito);
+            document.getElementById('incognitoBtn').style.color = isIncognito ? '#ef4444' : 'var(--text)';
+            if(isIncognito) {
+                currentSessionId = null;
+                document.getElementById('chatBox').innerHTML = "<div class='msg ai'>Gizli sohbet modundasın. Bu konuşmalar buluta kaydedilmez.</div>";
+            } else {
+                syncDataFromCloud();
+            }
         }
 
-        function startVoiceRecognition() {
-            if(!recognition) return alert("Tarayıcınız ses tanımayı desteklemiyor.");
-            recognition.start();
-            document.getElementById('micIcon').style.color = '#ef4444';
+        // --- SOHBET SİLME FONKSİYONU ---
+        async function deleteSession(id, e) {
+            e.stopPropagation();
+            if(!confirm("Bu sohbeti tamamen silmek istiyor musun?")) return;
+            await db.collection('users').doc(currentUser.uid).collection('sessions').doc(id).delete();
+            if(currentSessionId === id) currentSessionId = null;
+            syncDataFromCloud();
         }
 
-        // --- SESLİ OKUMA (Text to Speech) ---
+        // --- GELİŞMİŞ SES SİSTEMİ (5 SES) ---
         function speakText(text) {
+            window.speechSynthesis.cancel(); // Önceki sesi durdur
             const synth = window.speechSynthesis;
             const utter = new SpeechSynthesisUtterance(text);
-            utter.lang = 'tr-TR';
+            const voiceIndex = document.getElementById('voiceSelect').value;
+            const voices = synth.getVoices().filter(v => v.lang.includes('tr'));
+            
+            if(voices.length > 0) {
+                utter.voice = voices[voiceIndex % voices.length];
+                utter.pitch = [1, 1.2, 0.8, 1.5, 0.5][voiceIndex]; // Farklı karakterler
+                utter.rate = [1, 1.1, 0.9, 1.2, 0.7][voiceIndex];
+            }
             synth.speak(utter);
         }
 
-        // --- TEMA VE UI ---
-        function toggleTheme() {
-            document.body.classList.toggle('light-mode');
-            const isLight = document.body.classList.contains('light-mode');
-            document.getElementById('themeIcon').className = isLight ? 'fas fa-sun' : 'fas fa-moon';
-            localStorage.setItem('neura-theme', isLight ? 'light' : 'dark');
-        }
-
-        function openSidebar() { document.getElementById('sidebar').classList.add('active'); document.querySelector('.overlay').classList.add('active'); }
-        function closeSidebar() { document.getElementById('sidebar').classList.remove('active'); document.querySelector('.overlay').classList.remove('active'); }
-
-        // --- AUTH & DATA ---
+        // --- DATA & UI ---
         auth.onAuthStateChanged(user => {
-            if (user) {
-                currentUser = user;
-                document.getElementById('loginScreen').style.display = 'none';
-                updateUserInfoUI();
-                syncDataFromCloud();
-            } else {
-                document.getElementById('loginScreen').style.display = 'flex';
-            }
+            if (user) { currentUser = user; document.getElementById('loginScreen').style.display = 'none'; syncDataFromCloud(); }
+            else { document.getElementById('loginScreen').style.display = 'flex'; }
         });
 
         async function googleLogin() { await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
 
-        function updateUserInfoUI() {
-            document.getElementById('userInfo').innerHTML = `<img src="${currentUser.photoURL}" style="width:40px; border-radius:50%; border:2px solid var(--accent);"><div><div style="font-weight:bold; font-size:0.8rem;">${currentUser.displayName}</div></div>`;
-        }
-
         async function syncDataFromCloud() {
-            db.collection('users').doc(currentUser.uid).collection('sessions').orderBy('timestamp', 'desc')
-              .onSnapshot(snap => {
-                  sessions = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                  renderSessionList();
-                  if (!currentSessionId && sessions.length > 0) loadSession(sessions[0].id);
-              });
+            if(isIncognito) return;
+            db.collection('users').doc(currentUser.uid).collection('sessions').orderBy('timestamp', 'desc').onSnapshot(snap => {
+                sessions = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderSessionList();
+                if (!currentSessionId && sessions.length > 0) loadSession(sessions[0].id);
+            });
         }
 
         async function createNewChat() {
+            if(isIncognito) toggleIncognito();
             const doc = await db.collection('users').doc(currentUser.uid).collection('sessions').add({
                 title: "Yeni Sohbet", messages: [], timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
             currentSessionId = doc.id;
             loadSession(doc.id);
-            closeSidebar();
         }
 
         function loadSession(id) {
@@ -205,52 +199,45 @@
         async function sendMessage() {
             const input = document.getElementById('userInput');
             const text = input.value.trim();
-            if (!text || !currentSessionId) return;
+            if (!text) return;
 
             renderMessage('user', text);
             input.value = "";
-            document.getElementById('typingIndicator').style.display = 'flex';
+            document.getElementById('typingIndicator').style.display = 'block';
 
-            const session = sessions.find(s => s.id === currentSessionId);
-            const updated = [...(session.messages || []), { role: "user", content: text }];
+            let history = [];
+            if(!isIncognito) {
+                const session = sessions.find(s => s.id === currentSessionId);
+                history = session?.messages || [];
+            }
 
             try {
                 const res = await fetch(WORKER_URL, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ messages: [{ role: "system", content: "Adın Neura AI. Geliştiricin Arel." }, ...updated] })
+                    body: JSON.stringify({ messages: [{ role: "system", content: "Adın Neura AI." }, ...history, {role:"user", content:text}] })
                 });
                 const data = await res.json();
                 const aiMsg = data.choices[0].message.content;
-                
-                await db.collection('users').doc(currentUser.uid).collection('sessions').doc(currentSessionId).update({
-                    messages: [...updated, { role: "assistant", content: aiMsg }],
-                    title: session.messages.length === 0 ? text.substring(0, 20) : session.title
-                });
+
+                if(!isIncognito && currentSessionId) {
+                    await db.collection('users').doc(currentUser.uid).collection('sessions').doc(currentSessionId).update({
+                        messages: [...history, { role: "user", content: text }, { role: "assistant", content: aiMsg }],
+                        title: history.length === 0 ? text.substring(0, 20) : sessions.find(s=>s.id===currentSessionId).title
+                    });
+                }
                 
                 document.getElementById('typingIndicator').style.display = 'none';
                 renderMessage('assistant', aiMsg);
-            } catch (e) { 
-                document.getElementById('typingIndicator').style.display = 'none';
-                console.error(e); 
-            }
+                speakText(aiMsg);
+            } catch (e) { document.getElementById('typingIndicator').style.display = 'none'; }
         }
 
         function renderMessage(role, content) {
             const box = document.getElementById('chatBox');
             const div = document.createElement('div');
             div.className = `msg ${role === 'user' ? 'user' : 'ai'}`;
-            
-            // Markdown Desteği
-            div.innerHTML = role === 'ai' ? marked.parse(content) : content;
-            
-            if(role === 'ai') {
-                const tts = document.createElement('i');
-                tts.className = "fas fa-volume-up tts-btn";
-                tts.onclick = () => speakText(content);
-                div.appendChild(tts);
-            }
-
+            div.innerHTML = role === 'assistant' ? marked.parse(content) : content;
             box.appendChild(div);
             box.scrollTop = box.scrollHeight;
         }
@@ -259,18 +246,18 @@
             const list = document.getElementById('sessionList');
             list.innerHTML = "";
             sessions.forEach(s => {
-                const active = s.id === currentSessionId;
                 const div = document.createElement('div');
-                div.className = "btn-anim";
-                div.style = `padding:12px; background:${active ? 'rgba(59,130,246,0.1)' : 'transparent'}; margin-bottom:8px; border-radius:12px; cursor:pointer; font-size:0.85rem; border:1px solid ${active ? 'var(--accent)' : 'transparent'}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`;
-                div.innerHTML = `<i class="far fa-comment-dots" style="margin-right:8px; color:var(--accent);"></i> ${s.title}`;
-                div.onclick = () => { loadSession(s.id); closeSidebar(); };
+                div.className = `session-item`;
+                div.style = `padding:10px; background:${s.id === currentSessionId ? 'rgba(59,130,246,0.1)' : 'transparent'}; margin-bottom:5px; border-radius:10px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; border:1px solid ${s.id === currentSessionId ? 'var(--accent)' : 'transparent'};`;
+                div.innerHTML = `<span style="font-size:0.8rem; overflow:hidden;">${s.title}</span> <i class="fas fa-trash delete-btn" onclick="deleteSession('${s.id}', event)"></i>`;
+                div.onclick = () => loadSession(s.id);
                 list.appendChild(div);
             });
         }
 
+        function toggleTheme() { document.body.classList.toggle('light-mode'); }
         document.getElementById('userInput').addEventListener('keypress', (e) => { if(e.key === 'Enter') sendMessage(); });
-        if (localStorage.getItem('neura-theme') === 'light') toggleTheme();
+        window.speechSynthesis.onvoiceschanged = () => {}; // Sesleri hazırla
     </script>
 </body>
 </html>
