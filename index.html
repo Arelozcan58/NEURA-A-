@@ -1,64 +1,195 @@
-<div style="margin-top:10px;">
-    <label style="font-size: 0.75rem; color: var(--accent); margin-bottom: 5px; display: block;">Asistan Sesi:</label>
-    <select id="voiceSelect" style="width:100%; padding:8px; border-radius:8px; background:var(--msg-ai); color:var(--text); border:1px solid var(--border); margin-bottom:10px;">
-        <option value="none">🔇 Ses Kapalı</option>
-        <option value="female_1" selected>👩 Kadın Sesi (Yumuşak)</option>
-        <option value="female_2">👩 Kadın Sesi (Canlı)</option>
-        <option value="male_1">👨 Erkek Sesi (Derin)</option>
-        <option value="male_2">👨 Erkek Sesi (Resmi)</option>
-        <option value="robot">🤖 Robotik Ses</option>
-    </select>
-    <button onclick="auth.signOut()" style="width:100%; background:#ef4444; color:white; border:none; padding:10px; border-radius:10px;">Çıkış Yap</button>
-</div>
-
-<script>
-    // --- YENİLENMİŞ SES MOTORU ---
-    function speakText(text) {
-        const voiceSetting = document.getElementById('voiceSelect').value;
-        
-        // Ses kapalıysa hiçbir şey yapma
-        if (voiceSetting === "none") return;
-
-        window.speechSynthesis.cancel();
-        const synth = window.speechSynthesis;
-        const utter = new SpeechSynthesisUtterance(text);
-        
-        // Tarayıcıdaki tüm sesleri al
-        const voices = synth.getVoices();
-        // Türkçe sesleri filtrele
-        const trVoices = voices.filter(v => v.lang.includes('tr'));
-
-        utter.lang = 'tr-TR';
-
-        // Ses Seçeneklerine Göre Pitch (İncelik) ve Rate (Hız) Ayarları
-        switch(voiceSetting) {
-            case "female_1": 
-                utter.pitch = 1.2; utter.rate = 1.0; 
-                if(trVoices[0]) utter.voice = trVoices[0];
-                break;
-            case "female_2": 
-                utter.pitch = 1.4; utter.rate = 1.1; 
-                if(trVoices[0]) utter.voice = trVoices[0];
-                break;
-            case "male_1": 
-                utter.pitch = 0.7; utter.rate = 0.9; 
-                // Eğer tarayıcıda varsa erkek sesi seçmeye çalışır
-                const maleVoice = trVoices.find(v => v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('yelda') === false);
-                if(maleVoice) utter.voice = maleVoice;
-                break;
-            case "male_2": 
-                utter.pitch = 0.5; utter.rate = 0.85; 
-                break;
-            case "robot": 
-                utter.pitch = 2.0; utter.rate = 0.7; 
-                break;
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neura AI | Layout Fix</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <style>
+        :root { 
+            --bg: #05070a; --panel: #0f172a; --accent: #3b82f6; --text: #e2e8f0; 
+            --msg-ai: #1e293b; --border: #1e293b; --input-bg: #111827; --radius: 16px;
         }
 
-        synth.speak(utter);
-    }
+        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
 
-    // Tarayıcı sesleri yüklediğinde listeyi hazırla
-    window.speechSynthesis.onvoiceschanged = () => {
-        console.log("Sesler yüklendi, Neura hazır.");
-    };
-</script>
+        /* --- Menü Yapısı Fix --- */
+        .sidebar { 
+            position: fixed; left: -300px; top: 0; width: 280px; height: 100%; 
+            background: var(--panel); transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            z-index: 2000; border-right: 1px solid var(--border); padding: 20px; 
+            display: flex; flex-direction: column; 
+        }
+        
+        /* PC Ekranlarında Menü Her Zaman Açık */
+        @media (min-width: 1024px) {
+            .sidebar { position: relative; left: 0; }
+            .menu-toggle { display: none; }
+            .overlay { display: none !important; }
+        }
+
+        .sidebar.active { left: 0; box-shadow: 10px 0 50px rgba(0,0,0,0.5); }
+
+        .main-content { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+        #chatBox { flex: 1; overflow-y: auto; padding: 80px 20px 20px; display: flex; flex-direction: column; gap: 15px; }
+
+        .top-bar { 
+            position: absolute; top: 0; width: 100%; height: 60px; 
+            display: flex; align-items: center; justify-content: space-between; 
+            padding: 0 20px; background: rgba(5, 7, 10, 0.8); backdrop-filter: blur(10px); 
+            z-index: 1000; border-bottom: 1px solid var(--border); 
+        }
+
+        .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1500; }
+        .overlay.active { display: block; }
+
+        /* Mesajlar */
+        .msg { padding: 12px 16px; border-radius: var(--radius); max-width: 85%; font-size: 0.9rem; word-wrap: break-word; }
+        .user { background: var(--accent); align-self: flex-end; color: white; }
+        .ai { background: var(--msg-ai); align-self: flex-start; border: 1px solid var(--border); }
+    </style>
+</head>
+<body>
+
+    <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+    <div class="sidebar" id="sidebar">
+        <div id="userInfo" style="margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid var(--border);"></div>
+        
+        <button onclick="createNewChat()" style="width:100%; background:var(--accent); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; cursor:pointer;">+ Yeni Sohbet</button>
+        
+        <div id="sessionList" style="flex:1; overflow-y:auto; margin-top:15px;"></div>
+
+        <div style="margin-top:15px; padding-top:15px; border-top:1px solid var(--border);">
+            <label style="font-size:0.75rem; color:var(--accent);">Asistan Sesi:</label>
+            <select id="voiceSelect" style="width:100%; padding:8px; margin-top:5px; border-radius:8px; background:var(--input-bg); color:var(--text); border:1px solid var(--border);">
+                <option value="none">🔇 Ses Kapalı</option>
+                <option value="f1">👩 Kadın (Yumuşak)</option>
+                <option value="f2">👩 Kadın (Canlı)</option>
+                <option value="m1">👨 Erkek (Tok)</option>
+                <option value="m2">👨 Erkek (Resmi)</option>
+            </select>
+        </div>
+
+        <button onclick="auth.signOut()" style="width:100%; background:#ef4444; color:white; border:none; padding:10px; border-radius:10px; margin-top:15px; cursor:pointer;">Çıkış Yap</button>
+    </div>
+
+    <div class="main-content">
+        <div class="top-bar">
+            <button class="menu-toggle" onclick="openSidebar()" style="background:none; border:none; color:white; font-size:1.2rem;"><i class="fas fa-bars"></i></button>
+            <span style="font-weight:bold; letter-spacing:1px; color:var(--accent);">NEURA AI</span>
+            <div style="width:30px;"></div>
+        </div>
+
+        <div id="chatBox"></div>
+
+        <div style="padding:20px;">
+            <div style="display:flex; gap:10px; background:var(--input-bg); padding:10px; border-radius:20px; border:1px solid var(--border);">
+                <input type="text" id="userInput" placeholder="Mesaj yaz..." style="flex:1; background:transparent; border:none; color:white; outline:none;">
+                <button onclick="sendMessage()" style="background:var(--accent); border:none; color:white; width:40px; height:40px; border-radius:50%; cursor:pointer;"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAstwONxkqv8M-DAUjZ2y5RCEI9h2dEtiw",
+            authDomain: "neura-ai-c7b37.firebaseapp.com",
+            projectId: "neura-ai-c7b37",
+            storageBucket: "neura-ai-c7b37.firebasestorage.app",
+            messagingSenderId: "105155389436",
+            appId: "1:105155389436:web:e77111c9540b1568463479"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        const WORKER_URL = "https://neura.ozcanarel25.workers.dev";
+
+        let currentUser = null, currentSessionId = null, sessions = [];
+
+        // Menü Kontrolleri
+        function openSidebar() { document.getElementById('sidebar').classList.add('active'); document.getElementById('overlay').classList.add('active'); }
+        function closeSidebar() { document.getElementById('sidebar').classList.remove('active'); document.getElementById('overlay').classList.remove('active'); }
+
+        // Ses Sistemi
+        function speak(text) {
+            const mode = document.getElementById('voiceSelect').value;
+            if(mode === 'none') return; [cite: 2025-12-04]
+            
+            window.speechSynthesis.cancel();
+            const utter = new SpeechSynthesisUtterance(text);
+            utter.lang = 'tr-TR';
+            
+            if(mode === 'f1') { utter.pitch = 1.2; utter.rate = 1.0; }
+            if(mode === 'f2') { utter.pitch = 1.4; utter.rate = 1.1; }
+            if(mode === 'm1') { utter.pitch = 0.7; utter.rate = 0.9; }
+            if(mode === 'm2') { utter.pitch = 0.5; utter.rate = 0.8; }
+            
+            window.speechSynthesis.speak(utter);
+        }
+
+        // Firebase Auth & Data
+        auth.onAuthStateChanged(user => {
+            if(user) { currentUser = user; syncData(); }
+            else { window.location.reload(); }
+        });
+
+        async function syncData() {
+            db.collection('users').doc(currentUser.uid).collection('sessions').orderBy('timestamp', 'desc').onSnapshot(snap => {
+                sessions = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderList();
+            });
+        }
+
+        function renderList() {
+            const list = document.getElementById('sessionList');
+            list.innerHTML = "";
+            sessions.forEach(s => {
+                const item = document.createElement('div');
+                item.style = `padding:10px; margin-bottom:5px; border-radius:8px; cursor:pointer; font-size:0.85rem; background:${s.id === currentSessionId ? 'rgba(59,130,246,0.1)' : 'transparent'}; border:1px solid ${s.id === currentSessionId ? 'var(--accent)' : 'transparent'}`;
+                item.innerText = s.title;
+                item.onclick = () => { currentSessionId = s.id; loadChat(s); if(window.innerWidth < 1024) closeSidebar(); };
+                list.appendChild(item);
+            });
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('userInput');
+            const text = input.value.trim();
+            if(!text || !currentSessionId) return;
+
+            renderMessage('user', text);
+            input.value = "";
+            
+            try {
+                const res = await fetch(WORKER_URL, {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({ messages: [{role: "user", content: text}] })
+                });
+                const data = await res.json();
+                const aiMsg = data.choices[0].message.content;
+                renderMessage('ai', aiMsg);
+                speak(aiMsg);
+            } catch(e) { console.error(e); }
+        }
+
+        function renderMessage(role, content) {
+            const box = document.getElementById('chatBox');
+            const div = document.createElement('div');
+            div.className = `msg ${role === 'user' ? 'user' : 'ai'}`;
+            div.innerHTML = role === 'ai' ? marked.parse(content) : content;
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
+        }
+
+        document.getElementById('userInput').addEventListener('keypress', e => { if(e.key === 'Enter') sendMessage(); });
+    </script>
+</body>
+</html>
