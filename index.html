@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neura AI | Sessions</title>
+    <title>Neura AI | Global Memory</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root { --bg: #05070a; --panel: #0f172a; --accent: #3b82f6; --text: #e2e8f0; }
@@ -12,24 +12,19 @@
         /* Sidebar */
         .sidebar { position: fixed; left: -300px; top: 0; width: 280px; height: 100%; background: var(--panel); transition: 0.4s; z-index: 1000; border-right: 1px solid #1e293b; padding: 20px; display: flex; flex-direction: column; }
         .sidebar.active { left: 0; box-shadow: 20px 0 50px #000; }
-        
         .new-chat-btn { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: bold; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; gap: 10px; }
-        .new-chat-btn:hover { filter: brightness(1.1); }
-
-        .session-item { padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 8px; cursor: pointer; font-size: 0.85rem; border: 1px solid transparent; transition: 0.2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .session-item:hover { border-color: var(--accent); background: rgba(59, 130, 246, 0.1); }
-        .session-item.active { border-color: var(--accent); background: var(--accent); color: white; }
-
+        .session-item { padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 8px; cursor: pointer; font-size: 0.85rem; border: 1px solid transparent; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .session-item.active { border-color: var(--accent); background: rgba(59, 130, 246, 0.2); }
         .menu-toggle { position: fixed; top: 20px; left: 20px; z-index: 1100; background: var(--panel); border: 1px solid #1e293b; color: white; width: 45px; height: 45px; border-radius: 12px; cursor: pointer; }
 
-        /* Main UI */
+        /* Chat UI */
         .main-content { flex: 1; display: flex; flex-direction: column; width: 100%; }
         #chatBox { flex: 1; overflow-y: auto; padding: 90px 20px 30px; display: flex; flex-direction: column; gap: 15px; }
-        .msg { padding: 14px 18px; border-radius: 15px; max-width: 80%; line-height: 1.5; font-size: 0.95rem; }
+        .msg { padding: 14px 18px; border-radius: 15px; max-width: 80%; font-size: 0.95rem; line-height: 1.5; }
         .user { background: var(--accent); align-self: flex-end; border-bottom-right-radius: 2px; }
         .ai { background: #1e293b; align-self: flex-start; border-bottom-left-radius: 2px; border: 1px solid #334155; }
 
-        /* Input */
+        /* Input area */
         .input-area { padding: 25px; background: var(--bg); }
         .input-wrapper { max-width: 800px; margin: 0 auto; display: flex; gap: 10px; background: #111827; padding: 8px; border-radius: 15px; border: 1px solid #1e293b; }
         input { flex: 1; background: transparent; border: none; color: white; padding: 10px; outline: none; }
@@ -48,13 +43,9 @@
         <button class="new-chat-btn" onclick="createNewChat()">
             <i class="fas fa-plus"></i> Yeni Sohbet
         </button>
-        
         <h3 style="font-size:0.7rem; color:#64748b; text-transform:uppercase;">Geçmiş Sohbetler</h3>
         <div id="sessionList" style="flex:1; overflow-y:auto;"></div>
-
-        <button onclick="clearAllData()" style="background:#7f1d1d; color:white; border:none; padding:10px; border-radius:8px; cursor:pointer; font-size:0.8rem; margin-top:10px;">
-            <i class="fas fa-trash"></i> Tüm Veriyi Sil
-        </button>
+        <button onclick="clearAllData()" style="background:#7f1d1d; color:white; border:none; padding:10px; border-radius:8px; cursor:pointer; font-size:0.8rem; margin-top:10px;">Verileri Temizle</button>
     </div>
 
     <div class="main-content">
@@ -69,13 +60,17 @@
 
     <script>
         const WORKER_URL = "https://neura.ozcanarel25.workers.dev";
-        const STORAGE_KEY = "neura_ai_sessions_v1";
+        const STORAGE_KEY = "neura_ai_v5_sessions";
+        const MEMORY_KEY = "neura_ai_global_memory";
         
-        // sessions: [{id: 123, title: "Sohbet 1", messages: [...]}, ...]
         let sessions = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        let globalMemory = localStorage.getItem(MEMORY_KEY) || ""; // Sohbetler arası hafıza
         let currentSessionId = localStorage.getItem("neura_current_id") || null;
 
-        const SYSTEM_PROMPT = { role: "system", content: "Adın Neura AI. Geliştiricin Arel." };
+        function toggleMenu() {
+            document.getElementById('sidebar').classList.toggle('active');
+            document.querySelector('.overlay').classList.toggle('active');
+        }
 
         window.onload = () => {
             if (sessions.length === 0) createNewChat();
@@ -83,36 +78,19 @@
             renderSessionList();
         };
 
-        function toggleMenu() {
-            document.getElementById('sidebar').classList.toggle('active');
-            document.querySelector('.overlay').classList.toggle('active');
-        }
-
         function createNewChat() {
             const newId = Date.now().toString();
-            const newSession = {
-                id: newId,
-                title: "Yeni Sohbet",
-                messages: []
-            };
-            sessions.unshift(newSession); // En başa ekle
+            sessions.unshift({ id: newId, title: "Yeni Sohbet", messages: [] });
             saveAndRefresh(newId);
-            toggleMenu();
         }
 
         function loadSession(id) {
             currentSessionId = id;
             localStorage.setItem("neura_current_id", id);
             const session = sessions.find(s => s.id === id);
-            
             const chatBox = document.getElementById('chatBox');
             chatBox.innerHTML = "";
-            
-            if (session.messages.length === 0) {
-                renderMessage('assistant', "Yeni bir sohbet başladı. Ben Neura AI.");
-            } else {
-                session.messages.forEach(m => renderMessage(m.role, m.content));
-            }
+            session.messages.forEach(m => renderMessage(m.role, m.content));
             renderSessionList();
         }
 
@@ -122,34 +100,47 @@
             if (!text) return;
 
             const session = sessions.find(s => s.id === currentSessionId);
-            
-            // İlk mesajsa sohbet başlığını güncelle
-            if (session.messages.length === 0) {
-                session.title = text.substring(0, 20) + (text.length > 20 ? "..." : "");
-            }
+            if (session.messages.length === 0) session.title = text.substring(0, 20);
 
             addMessageToSession('user', text);
             input.value = "";
+
+            // KİMLİK VE HAFIZA TALİMATI
+            const systemPrompt = { 
+                role: "system", 
+                content: `Adın Neura AI. Geliştiricin Arel. 
+                ÖNEMLİ HAFIZA: ${globalMemory}. 
+                Kullanıcı sana adını veya özel bir bilgisini verirse, bunu asla unutma.` 
+            };
 
             try {
                 const response = await fetch(WORKER_URL, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ messages: [SYSTEM_PROMPT, ...session.messages] })
+                    body: JSON.stringify({ messages: [systemPrompt, ...session.messages] })
                 });
 
+                if (!response.ok) throw new Error("Worker hatası");
+                
                 const data = await response.json();
                 const aiMsg = data.choices[0].message.content;
+
+                // ANALİZ: Eğer kullanıcı adını söylediyse global hafızaya kaydet
+                if (text.toLocaleLowerCase().includes("benim adım") || text.toLocaleLowerCase().includes("ben arel")) {
+                    globalMemory += " Kullanıcının adı Arel.";
+                    localStorage.setItem(MEMORY_KEY, globalMemory);
+                }
+
                 addMessageToSession('assistant', aiMsg);
             } catch (err) {
-                renderMessage('assistant', "Bağlantı hatası.");
+                renderMessage('assistant', "Hata: Worker'a ulaşılamadı. Lütfen URL ve API anahtarını kontrol et.");
             }
         }
 
         function addMessageToSession(role, content) {
             const session = sessions.find(s => s.id === currentSessionId);
             session.messages.push({ role, content });
-            saveAndRefresh(currentSessionId);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
             renderMessage(role, content);
         }
 
@@ -168,7 +159,7 @@
             sessions.forEach(s => {
                 const div = document.createElement('div');
                 div.className = `session-item ${s.id === currentSessionId ? 'active' : ''}`;
-                div.innerHTML = `<i class="far fa-comment-alt"></i> ${s.title}`;
+                div.innerText = s.title;
                 div.onclick = () => { loadSession(s.id); toggleMenu(); };
                 list.appendChild(div);
             });
@@ -180,10 +171,8 @@
         }
 
         function clearAllData() {
-            if(confirm("Tüm geçmiş silinecek!")) {
-                localStorage.clear();
-                location.reload();
-            }
+            localStorage.clear();
+            location.reload();
         }
 
         document.getElementById('userInput').addEventListener('keypress', (e) => { if(e.key === 'Enter') sendMessage(); });
