@@ -3,59 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neura AI | Repair Mode</title>
+    <title>Neura AI | Privacy & Voice</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
     <style>
-        :root { --bg: #05070a; --panel: #0f172a; --accent: #3b82f6; --text: #e2e8f0; --border: #1e293b; --input-bg: #111827; }
-        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
-        .sidebar { position: fixed; left: -300px; top: 0; width: 280px; height: 100%; background: var(--panel); transition: 0.3s; z-index: 2000; border-right: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; }
-        @media (min-width: 1024px) { .sidebar { position: relative; left: 0; } .menu-toggle { display: none; } }
+        :root { 
+            --bg: #05070a; --panel: #0f172a; --accent: #3b82f6; --text: #e2e8f0; 
+            --msg-ai: #1e293b; --border: #1e293b; --input-bg: #111827; --radius: 16px;
+        }
+        body.light-mode {
+            --bg: #f8fafc; --panel: #ffffff; --accent: #2563eb; --text: #1e293b;
+            --msg-ai: #f1f5f9; --border: #e2e8f0; --input-bg: #ffffff;
+        }
+        body.incognito-mode {
+            --bg: #1a1a1a; --panel: #2d2d2d; --accent: #9ca3af; --text: #ffffff;
+            --msg-ai: #404040; --border: #525252; --input-bg: #262626;
+        }
+
+        * { box-sizing: border-box; }
+        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; transition: 0.3s; }
+
+        /* Sidebar: PC'de sürekli açık, Mobilde gizli */
+        .sidebar { position: fixed; left: -100%; top: 0; width: 85%; max-width: 300px; height: 100%; background: var(--panel); transition: 0.4s; z-index: 2000; border-right: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; }
         .sidebar.active { left: 0; }
-        .main-content { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
-        #chatBox { flex: 1; overflow-y: auto; padding: 70px 20px 20px; display: flex; flex-direction: column; gap: 15px; }
-        .top-bar { position: absolute; top: 0; width: 100%; height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; background: rgba(5, 7, 10, 0.8); backdrop-filter: blur(10px); z-index: 1000; border-bottom: 1px solid var(--border); }
-        .msg { padding: 12px 16px; border-radius: 15px; max-width: 85%; font-size: 0.95rem; line-height: 1.5; }
-        .user { background: var(--accent); align-self: flex-end; color: white; }
-        .ai { background: #1e293b; align-self: flex-start; border: 1px solid var(--border); }
-        .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1500; }
-        .overlay.active { display: block; }
-        .btn { cursor: pointer; border: none; transition: 0.2s; }
-        .btn:active { transform: scale(0.95); }
+        
+        @media (min-width: 1024px) { 
+            .sidebar { position: relative; left: 0; width: 300px; } 
+            .menu-toggle { display: none; } 
+        }
+
+        .main-content { flex: 1; display: flex; flex-direction: column; position: relative; min-width: 0; }
+        #chatBox { flex: 1; overflow-y: auto; padding: 80px 20px 30px; display: flex; flex-direction: column; gap: 15px; }
+        
+        .msg { padding: 14px 18px; border-radius: var(--radius); max-width: 85%; font-size: 0.95rem; position: relative; animation: fadeIn 0.3s; line-height: 1.5; }
+        .user { background: var(--accent); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
+        .ai { background: var(--msg-ai); color: var(--text); align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid var(--border); }
+
+        .session-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; margin-bottom: 5px; border-radius: 10px; cursor: pointer; transition: 0.2s; border: 1px solid transparent; }
+        .session-item:hover { background: rgba(59, 130, 246, 0.05); }
+        .session-item.active { background: rgba(59, 130, 246, 0.1); border-color: var(--accent); }
+
+        .delete-btn { color: #ef4444; opacity: 0; transition: 0.3s; cursor: pointer; padding: 5px; }
+        .session-item:hover .delete-btn { opacity: 1; }
+
+        .top-bar { position: absolute; top: 0; width: 100%; height: 70px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; background: rgba(var(--bg), 0.7); backdrop-filter: blur(15px); z-index: 1000; border-bottom: 1px solid var(--border); }
+        .incognito-badge { display: none; background: #525252; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; margin-left: 10px; }
+        body.incognito-mode .incognito-badge { display: inline-block; }
+
+        .typing-indicator { display: none; padding: 10px 15px; background: var(--msg-ai); border-radius: 20px; width: fit-content; margin-bottom: 15px; margin-left: 20px; font-size: 0.8rem; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body>
-    <div class="overlay" id="overlay" onclick="window.toggleMenu()"></div>
+<body class="dark-mode">
+
+    <div id="loginScreen" style="position:fixed; inset:0; background:var(--bg); z-index:3000; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+        <h1 style="color:var(--accent); font-size:3rem; letter-spacing: 5px;">NEURA</h1>
+        <button onclick="googleLogin()" style="background:var(--accent); color:white; padding:15px 40px; border-radius:50px; border:none; cursor:pointer; font-weight:bold; box-shadow: 0 4px 15px rgba(59,130,246,0.3);">GOOGLE İLE BAŞLA</button>
+    </div>
+
     <div class="sidebar" id="sidebar">
-        <div id="uName" style="font-weight:bold; color:var(--accent); margin-bottom:20px;">Bağlanıyor...</div>
-        <button class="btn" onclick="window.handleNewChat()" style="width:100%; background:var(--accent); color:white; padding:12px; border-radius:12px; font-weight:bold;">+ Yeni Sohbet</button>
-        <div id="sessionList" style="flex:1; overflow-y:auto; margin-top:20px; display:flex; flex-direction:column; gap:8px;"></div>
-        <div style="padding-top:15px; border-top:1px solid var(--border);">
-            <select id="vSel" style="width:100%; padding:10px; border-radius:10px; background:var(--input-bg); color:white; border:1px solid var(--border); margin-bottom:10px;">
-                <option value="none">🔇 Ses Kapalı</option>
-                <option value="f" selected>👩 Kadın Sesi</option>
-                <option value="m">👨 Erkek Sesi</option>
+        <div id="userInfo" style="margin-bottom:20px; padding-bottom:15px; border-bottom:1px solid var(--border); font-weight:bold; color:var(--accent);"></div>
+        
+        <div style="display:flex; gap:10px; margin-bottom:15px;">
+            <button onclick="createNewChat()" style="flex:1; background:var(--accent); color:white; border:none; padding:12px; border-radius:12px; font-weight:bold; cursor:pointer;">+ Yeni Sohbet</button>
+            <button onclick="toggleIncognito()" id="incognitoBtn" title="Gizli Sohbet" style="background:var(--msg-ai); color:var(--text); border:1px solid var(--border); padding:10px; border-radius:12px; cursor:pointer;"><i class="fas fa-user-secret"></i></button>
+        </div>
+
+        <div id="sessionList" style="flex:1; overflow-y:auto;"></div>
+        
+        <div style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border);">
+            <label style="font-size:0.75rem; margin-bottom:5px; display:block; color:var(--accent);">Asistan Sesi:</label>
+            <select id="voiceSelect" style="width:100%; padding:10px; border-radius:8px; background:var(--msg-ai); color:var(--text); border:1px solid var(--border); margin-bottom:10px; outline:none;">
+                <option value="off">🔇 Ses Kapalı</option>
+                <option value="0" selected>👩 Ses 1 (Doğal)</option>
+                <option value="1">👩 Ses 2 (Canlı)</option>
+                <option value="2">👨 Ses 3 (Kalın)</option>
+                <option value="3">👧 Ses 4 (İnce)</option>
+                <option value="4">🤖 Ses 5 (Robotik)</option>
             </select>
-            <button class="btn" onclick="window.handleLogout()" style="width:100%; background:#ef4444; color:white; padding:10px; border-radius:10px; font-weight:bold;">Hesaptan Çık</button>
+            <button onclick="auth.signOut()" style="width:100%; background:#ef4444; color:white; border:none; padding:10px; border-radius:10px; cursor:pointer; font-weight:bold;">Çıkış Yap</button>
         </div>
     </div>
 
     <div class="main-content">
         <div class="top-bar">
-            <button class="menu-toggle btn" onclick="window.toggleMenu()" style="background:none; color:white; font-size:1.3rem;"><i class="fas fa-bars"></i></button>
-            <span style="font-weight:bold;">NEURA AI</span>
-            <div style="width:40px;"></div>
+            <button class="menu-toggle" onclick="document.getElementById('sidebar').classList.toggle('active')" style="background:none; border:none; color:var(--text); font-size:1.2rem; cursor:pointer;"><i class="fas fa-bars"></i></button>
+            <div style="display:flex; align-items:center;">
+                <span style="font-weight:bold; color:var(--accent); letter-spacing:1px;">NEURA AI</span>
+                <span class="incognito-badge"><i class="fas fa-user-secret"></i> GİZLİ</span>
+            </div>
+            <button onclick="toggleTheme()" style="background:none; border:none; color:var(--text); cursor:pointer; font-size:1.1rem;"><i id="themeIcon" class="fas fa-moon"></i></button>
         </div>
+
         <div id="chatBox"></div>
-        <div style="padding:20px;">
-            <div style="display:flex; gap:10px; background:var(--input-bg); padding:8px; border-radius:30px; border:1px solid var(--border); align-items:center;">
-                <input type="text" id="uInput" placeholder="Mesaj yaz..." style="flex:1; background:transparent; border:none; color:white; outline:none; padding:10px 15px;">
-                <button class="btn" onclick="window.handleSend()" style="background:var(--accent); color:white; width:45px; height:45px; border-radius:50%;">
-                    <i class="fas fa-paper-plane"></i>
-                </button>
+        
+        <div class="typing-indicator" id="typingIndicator">Neura düşünüyor...</div>
+
+        <div style="padding:20px; max-width:900px; margin:0 auto; width:100%;">
+            <div style="display:flex; gap:10px; background:var(--input-bg); padding:10px; border-radius:30px; border:1px solid var(--border); align-items:center; box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
+                <input type="text" id="userInput" placeholder="Mesajınızı buraya yazın..." style="flex:1; background:transparent; border:none; color:var(--text); outline:none; padding-left:15px; font-size:1rem;">
+                <button onclick="sendMessage()" style="background:var(--accent); border:none; color:white; width:45px; height:45px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:0.2s;"><i class="fas fa-paper-plane"></i></button>
             </div>
         </div>
     </div>
@@ -69,110 +121,181 @@
             messagingSenderId: "105155389436",
             appId: "1:105155389436:web:e77111c9540b1568463479"
         };
+
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
+        const WORKER_URL = "https://neura.ozcanarel25.workers.dev";
 
-        let curUser = null, curSid = null, allSess = [];
+        let currentUser = null, sessions = [], currentSessionId = null, isIncognito = false;
 
-        // Fonksiyonları Global Yapalım (Butonların her zaman erişebilmesi için)
-        window.toggleMenu = () => {
-            document.getElementById('sidebar').classList.toggle('active');
-            document.getElementById('overlay').classList.toggle('active');
-        };
-
-        window.handleLogout = () => auth.signOut().then(() => window.location.reload());
-
-        window.handleNewChat = async () => {
-            if(!curUser) return;
-            const d = await db.collection('users').doc(curUser.uid).collection('sessions').add({
-                title: "Yeni Sohbet", messages: [], timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            curSid = d.id;
-            console.log("Yeni Sohbet Açıldı:", curSid);
-        };
-
-        window.handleSend = async () => {
-            const input = document.getElementById('uInput');
-            const val = input.value.trim();
-            if(!val) return;
-            
-            // Eğer aktif sohbet yoksa önce oluştur
-            if(!curSid) {
-                await window.handleNewChat();
+        // --- GİZLİ SOHBET ---
+        function toggleIncognito() {
+            isIncognito = !isIncognito;
+            document.body.classList.toggle('incognito-mode', isIncognito);
+            document.getElementById('incognitoBtn').style.color = isIncognito ? '#ef4444' : 'var(--text)';
+            const chatBox = document.getElementById('chatBox');
+            if(isIncognito) {
+                currentSessionId = null;
+                chatBox.innerHTML = "<div class='msg ai'><b>Gizli Mod Aktif:</b> Bu konuşma geçmişe kaydedilmeyecek ve pencere kapandığında silinecektir.</div>";
+            } else {
+                syncDataFromCloud();
             }
+        }
 
-            addMsg('user', val);
-            input.value = "";
-            
+        // --- TEMA ---
+        function toggleTheme() {
+            document.body.classList.toggle('light-mode');
+            const icon = document.getElementById('themeIcon');
+            icon.className = document.body.classList.contains('light-mode') ? 'fas fa-sun' : 'fas fa-moon';
+        }
+
+        // --- SOHBET SİLME ---
+        async function deleteSession(id, e) {
+            e.stopPropagation();
+            if(!confirm("Bu sohbet kalıcı olarak silinsin mi?")) return;
             try {
-                const r = await fetch("https://neura.ozcanarel25.workers.dev", {
-                    method: "POST", headers: {"Content-Type":"application/json"},
-                    body: JSON.stringify({ messages: [{role:"user", content:val}] })
-                });
-                const d = await r.json();
-                const ai = d.choices[0].message.content;
-                
-                // Firestore Güncelleme
-                const sRef = db.collection('users').doc(curUser.uid).collection('sessions').doc(curSid);
-                const sDoc = await sRef.get();
-                const oldMsgs = sDoc.data()?.messages || [];
-                
-                await sRef.update({
-                    messages: [...oldMsgs, {role:"user", content:val}, {role:"assistant", content:ai}],
-                    title: oldMsgs.length === 0 ? val.substring(0,20) : sDoc.data().title
-                });
-                
-                addMsg('assistant', ai);
-                playVoice(ai);
-            } catch(e) { 
-                console.error("Gönderme Hatası:", e);
-                addMsg('ai', "Hata: Mesaj iletilemedi. Worker çalışıyor mu?");
-            }
-        };
-
-        function addMsg(role, txt) {
-            const d = document.createElement('div');
-            d.className = `msg ${role === 'user' ? 'user' : 'ai'}`;
-            d.innerHTML = role === 'assistant' ? marked.parse(txt) : txt;
-            document.getElementById('chatBox').appendChild(d);
-            document.getElementById('chatBox').scrollTop = chatBox.scrollHeight;
+                await db.collection('users').doc(currentUser.uid).collection('sessions').doc(id).delete();
+                if(currentSessionId === id) {
+                    currentSessionId = null;
+                    document.getElementById('chatBox').innerHTML = "";
+                }
+            } catch (err) { console.error("Silme hatası:", err); }
         }
 
-        function playVoice(t) {
-            const v = document.getElementById('vSel').value;
-            if(v === 'none') return;
+        // --- GELİŞMİŞ SES SİSTEMİ (Ses Kapatma Dahil) ---
+        function speakText(text) {
             window.speechSynthesis.cancel();
-            const u = new SpeechSynthesisUtterance(t);
-            u.lang = 'tr-TR'; u.pitch = (v === 'f' ? 1.2 : 0.8);
-            window.speechSynthesis.speak(u);
+            const voiceVal = document.getElementById('voiceSelect').value;
+            
+            if(voiceVal === "off") return; // Ses kapalıysa çık
+
+            const synth = window.speechSynthesis;
+            const utter = new SpeechSynthesisUtterance(text);
+            const voices = synth.getVoices().filter(v => v.lang.includes('tr'));
+            
+            const idx = parseInt(voiceVal);
+            if(voices.length > 0) {
+                utter.voice = voices[idx % voices.length];
+                utter.pitch = [1, 1.2, 0.7, 1.4, 0.5][idx]; 
+                utter.rate = [1, 1.05, 0.9, 1.1, 0.8][idx];
+            }
+            synth.speak(utter);
         }
 
+        // --- FIREBASE BAĞLANTISI ---
         auth.onAuthStateChanged(user => {
-            if(user) { 
-                curUser = user; 
-                document.getElementById('uName').innerText = user.displayName;
-                db.collection('users').doc(user.uid).collection('sessions').orderBy('timestamp', 'desc').onSnapshot(snap => {
-                    allSess = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    const l = document.getElementById('sessionList');
-                    l.innerHTML = "";
-                    allSess.forEach(s => {
-                        const d = document.createElement('div');
-                        d.style = `padding:10px; border-radius:8px; cursor:pointer; background:${s.id === curSid ? 'rgba(59,130,246,0.2)' : 'var(--input-bg)'}`;
-                        d.innerText = s.title;
-                        d.onclick = () => { curSid = s.id; loadChat(s); };
-                        l.appendChild(d);
-                    });
-                });
-            } else { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
+            if (user) { 
+                currentUser = user; 
+                document.getElementById('loginScreen').style.display = 'none'; 
+                document.getElementById('userInfo').innerText = user.displayName;
+                syncDataFromCloud(); 
+            } else { 
+                document.getElementById('loginScreen').style.display = 'flex'; 
+            }
         });
 
-        function loadChat(s) {
-            document.getElementById('chatBox').innerHTML = "";
-            if(s.messages) s.messages.forEach(m => addMsg(m.role, m.content));
+        async function googleLogin() { 
+            const provider = new firebase.auth.GoogleAuthProvider();
+            await auth.signInWithPopup(provider); 
         }
 
-        document.getElementById('uInput').addEventListener('keypress', e => { if(e.key === 'Enter') window.handleSend(); });
+        function syncDataFromCloud() {
+            if(isIncognito || !currentUser) return;
+            db.collection('users').doc(currentUser.uid).collection('sessions').orderBy('timestamp', 'desc').onSnapshot(snap => {
+                sessions = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderSessionList();
+                if (!currentSessionId && sessions.length > 0) loadSession(sessions[0].id);
+                else if (sessions.length === 0) createNewChat();
+            });
+        }
+
+        async function createNewChat() {
+            if(isIncognito) toggleIncognito();
+            const doc = await db.collection('users').doc(currentUser.uid).collection('sessions').add({
+                title: "Yeni Sohbet", messages: [], timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            currentSessionId = doc.id;
+        }
+
+        function loadSession(id) {
+            currentSessionId = id;
+            const session = sessions.find(s => s.id === id);
+            const box = document.getElementById('chatBox');
+            box.innerHTML = "";
+            if (session?.messages) session.messages.forEach(m => renderMessage(m.role, m.content));
+            renderSessionList();
+            if(window.innerWidth < 1024) document.getElementById('sidebar').classList.remove('active');
+        }
+
+        // --- MESAJ GÖNDERME ---
+        async function sendMessage() {
+            const input = document.getElementById('userInput');
+            const text = input.value.trim();
+            if (!text) return;
+
+            renderMessage('user', text);
+            input.value = "";
+            document.getElementById('typingIndicator').style.display = 'block';
+
+            let history = [];
+            if(!isIncognito && currentSessionId) {
+                const session = sessions.find(s => s.id === currentSessionId);
+                history = session?.messages || [];
+            }
+
+            try {
+                const res = await fetch(WORKER_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ messages: [...history, {role:"user", content:text}] })
+                });
+                const data = await res.json();
+                const aiMsg = data.choices[0].message.content;
+
+                if(!isIncognito && currentSessionId) {
+                    const session = sessions.find(s => s.id === currentSessionId);
+                    await db.collection('users').doc(currentUser.uid).collection('sessions').doc(currentSessionId).update({
+                        messages: [...history, { role: "user", content: text }, { role: "assistant", content: aiMsg }],
+                        title: history.length === 0 ? text.substring(0, 20) : session.title
+                    });
+                }
+                
+                document.getElementById('typingIndicator').style.display = 'none';
+                renderMessage('assistant', aiMsg);
+                speakText(aiMsg);
+            } catch (e) { 
+                document.getElementById('typingIndicator').style.display = 'none';
+                renderMessage('ai', "Bir bağlantı hatası oluştu.");
+            }
+        }
+
+        function renderMessage(role, content) {
+            const box = document.getElementById('chatBox');
+            const div = document.createElement('div');
+            div.className = `msg ${role === 'user' ? 'user' : 'ai'}`;
+            div.innerHTML = role === 'assistant' ? marked.parse(content) : content;
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function renderSessionList() {
+            const list = document.getElementById('sessionList');
+            list.innerHTML = "";
+            sessions.forEach(s => {
+                const div = document.createElement('div');
+                div.className = `session-item ${s.id === currentSessionId ? 'active' : ''}`;
+                div.innerHTML = `
+                    <span style="font-size:0.85rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1;">${s.title}</span>
+                    <i class="fas fa-trash-alt delete-btn" onclick="deleteSession('${s.id}', event)"></i>
+                `;
+                div.onclick = () => loadSession(s.id);
+                list.appendChild(div);
+            });
+        }
+
+        document.getElementById('userInput').addEventListener('keypress', (e) => { if(e.key === 'Enter') sendMessage(); });
+        window.speechSynthesis.onvoiceschanged = () => {}; 
     </script>
 </body>
 </html>
