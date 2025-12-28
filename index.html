@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEURA-A- | AI Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%); color: #f8fafc; min-height: 100vh; }
+        .chat-container { height: 65vh; scrollbar-width: thin; scrollbar-color: #334155 #0f172a; }
+        .user-bubble { background: #3b82f6; border-radius: 18px 18px 0 18px; margin-left: auto; }
+        .ai-bubble { background: #334155; border-radius: 18px 18px 18px 0; margin-right: auto; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .message-anim { animation: fadeIn 0.3s ease-out forwards; }
+    </style>
+</head>
+<body class="flex flex-col items-center p-4">
+    <div class="w-full max-w-3xl flex flex-col h-screen">
+        <header class="flex justify-between items-center py-6 border-b border-slate-700 mb-4">
+            <div>
+                <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">NEURA-A-</h1>
+                <p class="text-xs text-slate-400">Worker Proxy & Akıllı Analiz Aktif</p>
+            </div>
+            <button onclick="clearChat()" class="text-xs bg-red-900/30 hover:bg-red-900/50 text-red-400 px-3 py-1 rounded border border-red-800/50 transition">Belleği Temizle</button>
+        </header>
+
+        <div id="chatBox" class="chat-container flex flex-col gap-4 overflow-y-auto p-2">
+            </div>
+
+        <div class="mt-auto pb-8">
+            <div id="status" class="text-xs text-blue-400 mb-2 h-4 opacity-0 transition-opacity">Neura analiz ediyor...</div>
+            <div class="relative">
+                <input type="text" id="userInput" placeholder="Mesajınızı buraya yazın..." 
+                    class="w-full bg-slate-800/50 border border-slate-700 rounded-2xl px-6 py-4 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all pr-16">
+                <button onclick="sendMessage()" id="sendBtn" 
+                    class="absolute right-2 top-2 bottom-2 bg-blue-600 hover:bg-blue-500 px-4 rounded-xl font-bold transition-all disabled:opacity-50">
+                    →
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- AYARLAR ---
+        const WORKER_URL = "https://neura.ozcanarel25.workers.dev"; // Worker URL'ni kontrol et!
+
+        let chatHistory = JSON.parse(localStorage.getItem('neura_chat_history')) || [];
+
+        // Sayfa yüklendiğinde geçmişi yükle
+        window.onload = () => {
+            if (chatHistory.length > 0) {
+                chatHistory.forEach(msg => appendToScreen(msg.role, msg.content));
+            } else {
+                appendMessage('assistant', "Merhaba! Ben Neura. Seninle tanıştığıma memnun oldum. Nasıl yardımcı olabilirim?");
+            }
+        };
+
+        async function sendMessage() {
+            const input = document.getElementById('userInput');
+            const btn = document.getElementById('sendBtn');
+            const status = document.getElementById('status');
+            const text = input.value.trim();
+
+            if (!text) return;
+
+            // Kullanıcı mesajı
+            appendMessage('user', text);
+            input.value = "";
+            btn.disabled = true;
+            status.style.opacity = "1";
+
+            try {
+                const response = await fetch(WORKER_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ messages: chatHistory })
+                });
+
+                const data = await response.json();
+                const aiResponse = data.choices[0].message.content;
+
+                appendMessage('assistant', aiResponse);
+                
+                // Belleğe kaydet
+                localStorage.setItem('neura_chat_history', JSON.stringify(chatHistory));
+
+            } catch (err) {
+                appendMessage('assistant', "Hata: Worker'a ulaşılamadı. Lütfen API anahtarını ve Worker URL'sini kontrol et.");
+            } finally {
+                btn.disabled = false;
+                status.style.opacity = "0";
+            }
+        }
+
+        function appendMessage(role, content) {
+            chatHistory.push({ role, content });
+            appendToScreen(role, content);
+        }
+
+        function appendToScreen(role, content) {
+            const chatBox = document.getElementById('chatBox');
+            const div = document.createElement('div');
+            div.className = `p-4 max-w-[85%] message-anim ${role === 'user' ? 'user-bubble' : 'ai-bubble'}`;
+            div.innerText = content;
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function clearChat() {
+            localStorage.removeItem('neura_chat_history');
+            location.reload();
+        }
+
+        document.getElementById('userInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+    </script>
+</body>
+</html>
