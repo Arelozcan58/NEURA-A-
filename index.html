@@ -3,137 +3,198 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neura AI | Final Fix</title>
+    <title>Neura AI | Cloud v6</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root { --bg: #05070a; --panel: #0f172a; --accent: #3b82f6; --text: #e2e8f0; }
         body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
 
-        .sidebar { position: fixed; left: -300px; top: 0; width: 280px; height: 100%; background: var(--panel); transition: 0.4s; z-index: 1000; border-right: 1px solid #1e293b; padding: 20px; display: flex; flex-direction: column; }
-        .sidebar.active { left: 0; box-shadow: 20px 0 50px #000; }
-        .new-chat-btn { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: bold; margin-bottom: 20px; }
-        .session-item { padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 8px; cursor: pointer; font-size: 0.85rem; border: 1px solid transparent; }
-        .session-item.active { border-color: var(--accent); background: rgba(59, 130, 246, 0.2); }
-        .menu-toggle { position: fixed; top: 20px; left: 20px; z-index: 1100; background: var(--panel); border: 1px solid #1e293b; color: white; width: 45px; height: 45px; border-radius: 12px; cursor: pointer; }
+        /* Giriş Ekranı */
+        #loginScreen { position: fixed; inset: 0; background: var(--bg); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .login-btn { background: white; color: black; padding: 15px 30px; border-radius: 50px; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 1.1rem; box-shadow: 0 10px 30px rgba(255,255,255,0.1); }
 
-        .main-content { flex: 1; display: flex; flex-direction: column; width: 100%; }
+        /* Sidebar */
+        .sidebar { position: fixed; left: -300px; top: 0; width: 280px; height: 100%; background: var(--panel); transition: 0.4s; z-index: 1000; border-right: 1px solid #1e293b; padding: 20px; display: flex; flex-direction: column; }
+        .sidebar.active { left: 0; }
+        .user-info { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #1e293b; }
+        .user-info img { width: 40px; border-radius: 50%; border: 2px solid var(--accent); }
+
+        /* Chat Alanı */
+        .main-content { flex: 1; display: flex; flex-direction: column; position: relative; }
         #chatBox { flex: 1; overflow-y: auto; padding: 90px 20px 30px; display: flex; flex-direction: column; gap: 15px; }
-        .msg { padding: 14px 18px; border-radius: 15px; max-width: 80%; font-size: 0.95rem; }
+        .msg { padding: 14px 18px; border-radius: 15px; max-width: 80%; font-size: 0.95rem; line-height: 1.5; }
         .user { background: var(--accent); align-self: flex-end; border-bottom-right-radius: 2px; }
         .ai { background: #1e293b; align-self: flex-start; border-bottom-left-radius: 2px; border: 1px solid #334155; }
 
-        .input-area { padding: 25px; background: var(--bg); }
-        .input-wrapper { max-width: 800px; margin: 0 auto; display: flex; gap: 10px; background: #111827; padding: 8px; border-radius: 15px; border: 1px solid #1e293b; }
+        .input-area { padding: 25px; background: linear-gradient(transparent, var(--bg)); }
+        .input-wrapper { max-width: 800px; margin: 0 auto; display: flex; gap: 10px; background: #111827; padding: 10px; border-radius: 20px; border: 1px solid #1e293b; }
         input { flex: 1; background: transparent; border: none; color: white; padding: 10px; outline: none; }
-        button#sendBtn { background: var(--accent); border: none; color: white; padding: 0 20px; border-radius: 10px; cursor: pointer; }
-
-        .overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:999; }
-        .overlay.active { display:block; }
+        .menu-toggle { position: fixed; top: 20px; left: 20px; z-index: 1100; background: var(--panel); border: 1px solid #1e293b; color: white; width: 45px; height: 45px; border-radius: 12px; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <button class="menu-toggle" onclick="toggleMenu()"><i class="fas fa-bars"></i></button>
-    <div class="overlay" onclick="toggleMenu()"></div>
+    <div id="loginScreen">
+        <h1 style="color: var(--accent); letter-spacing: 5px; margin-bottom: 10px;">NEURA AI</h1>
+        <p style="color: #64748b; margin-bottom: 30px;">Arel tarafından geliştirilen bulut tabanlı zeka.</p>
+        <button class="login-btn" onclick="googleLogin()">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/action/google.svg" width="20">
+            Google Hesabı ile Giriş Yap
+        </button>
+    </div>
+
+    <button class="menu-toggle" onclick="document.getElementById('sidebar').classList.toggle('active')">
+        <i class="fas fa-bars"></i>
+    </button>
 
     <div class="sidebar" id="sidebar">
-        <button class="new-chat-btn" onclick="createNewChat()">+ Yeni Sohbet</button>
+        <div class="user-info" id="userInfo"></div>
+        <button onclick="createNewChat()" style="width:100%; background:var(--accent); color:white; border:none; padding:12px; border-radius:10px; cursor:pointer; font-weight:bold; margin-bottom:20px;">
+            <i class="fas fa-plus"></i> Yeni Sohbet
+        </button>
         <div id="sessionList" style="flex:1; overflow-y:auto;"></div>
-        <button onclick="clearAllData()" style="background:#7f1d1d; color:white; border:none; padding:10px; border-radius:8px; cursor:pointer; font-size:0.8rem;">Belleği Temizle</button>
+        <button onclick="auth.signOut()" style="background:#7f1d1d; color:white; border:none; padding:10px; border-radius:8px; cursor:pointer; margin-top:10px;">
+            <i class="fas fa-sign-out-alt"></i> Çıkış Yap
+        </button>
     </div>
 
     <div class="main-content">
         <div id="chatBox"></div>
         <div class="input-area">
             <div class="input-wrapper">
-                <input type="text" id="userInput" placeholder="Mesajınızı yazın...">
-                <button onclick="sendMessage()" id="sendBtn">GÖNDER</button>
+                <input type="text" id="userInput" placeholder="Mesajınızı buraya yazın...">
+                <button onclick="sendMessage()" style="background:var(--accent); border:none; color:white; padding:0 25px; border-radius:12px; cursor:pointer; font-weight:bold;">GÖNDER</button>
             </div>
         </div>
     </div>
 
     <script>
-        const WORKER_URL = "https://neura.ozcanarel25.workers.dev";
-        const STORAGE_KEY = "neura_final_v6";
-        const GLOBAL_MEM_KEY = "neura_global_memory";
-        
-        let sessions = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        let globalMemory = localStorage.getItem(GLOBAL_MEM_KEY) || "Henüz kullanıcı hakkında özel bir bilgi yok.";
-        let currentSessionId = localStorage.getItem("neura_current_id") || null;
-
-        window.onload = () => {
-            if (sessions.length === 0) createNewChat();
-            else loadSession(currentSessionId || sessions[0].id);
-            renderSessionList();
+        // Görselden alınan senin özel Firebase yapılandırman
+        const firebaseConfig = {
+            apiKey: "AIzaSyAstwONxkqv8M-DAUjZ2y5RCEI9h2dEtiw",
+            authDomain: "neura-ai-c7b37.firebaseapp.com",
+            projectId: "neura-ai-c7b37",
+            storageBucket: "neura-ai-c7b37.firebasestorage.app",
+            messagingSenderId: "105155389436",
+            appId: "1:105155389436:web:e77111c9540b1568463479",
+            measurementId: "G-7LW2TL9MEL"
         };
 
-        function toggleMenu() {
-            document.getElementById('sidebar').classList.toggle('active');
-            document.querySelector('.overlay').classList.toggle('active');
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        const WORKER_URL = "https://neura.ozcanarel25.workers.dev";
+
+        let currentUser = null;
+        let sessions = [];
+        let currentSessionId = null;
+
+        // Oturum Durumu Takibi
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('loginScreen').style.display = 'none';
+                updateUserInfoUI();
+                syncDataFromCloud();
+            } else {
+                document.getElementById('loginScreen').style.display = 'flex';
+                document.getElementById('chatBox').innerHTML = "";
+            }
+        });
+
+        async function googleLogin() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            try {
+                await auth.signInWithPopup(provider);
+            } catch (error) {
+                alert("Giriş başarısız: " + error.message);
+            }
         }
 
-        function createNewChat() {
-            const newId = Date.now().toString();
-            sessions.unshift({ id: newId, title: "Yeni Sohbet", messages: [] });
-            saveData(newId);
+        function updateUserInfoUI() {
+            document.getElementById('userInfo').innerHTML = `
+                <img src="${currentUser.photoURL}">
+                <div>
+                    <div style="font-weight:bold; font-size:0.9rem;">${currentUser.displayName}</div>
+                    <div style="font-size:0.7rem; color:#64748b;">${currentUser.email}</div>
+                </div>
+            `;
+        }
+
+        async function syncDataFromCloud() {
+            db.collection('users').doc(currentUser.uid).collection('sessions')
+              .orderBy('timestamp', 'desc')
+              .onSnapshot(snapshot => {
+                  sessions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                  renderSessionList();
+                  if (!currentSessionId && sessions.length > 0) {
+                      loadSession(sessions[0].id);
+                  }
+              });
+        }
+
+        async function createNewChat() {
+            const newSession = {
+                title: "Yeni Sohbet",
+                messages: [],
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            const docRef = await db.collection('users').doc(currentUser.uid).collection('sessions').add(newSession);
+            currentSessionId = docRef.id;
+            loadSession(currentSessionId);
+            document.getElementById('sidebar').classList.remove('active');
         }
 
         function loadSession(id) {
             currentSessionId = id;
-            localStorage.setItem("neura_current_id", id);
             const session = sessions.find(s => s.id === id);
             const chatBox = document.getElementById('chatBox');
             chatBox.innerHTML = "";
-            session.messages.forEach(m => renderMessage(m.role, m.content));
-            renderSessionList();
+            if (session && session.messages) {
+                session.messages.forEach(m => renderMessage(m.role, m.content));
+            }
         }
 
         async function sendMessage() {
             const input = document.getElementById('userInput');
             const text = input.value.trim();
-            if (!text) return;
+            if (!text || !currentSessionId) return;
 
             const session = sessions.find(s => s.id === currentSessionId);
-            if (session.messages.length === 0) session.title = text.substring(0, 20);
-
-            // HAFIZA ANALİZİ: Kullanıcı ismini söylüyorsa yakala
-            if (text.toLowerCase().includes("adım") || text.toLowerCase().includes("ismim") || text.toLowerCase().includes("ben arel")) {
-                globalMemory = "Kullanıcının ismi Arel.";
-                localStorage.setItem(GLOBAL_MEM_KEY, globalMemory);
-            }
-
-            addMessageToSession('user', text);
+            const updatedMessages = [...(session.messages || []), { role: "user", content: text }];
+            
+            renderMessage('user', text);
             input.value = "";
 
             const systemPrompt = { 
                 role: "system", 
-                content: `Adın Neura AI. Geliştiricin Arel. Global Hafıza: ${globalMemory}. Bu bilgiyi tüm sohbet odalarında hatırla ve buna göre cevap ver.` 
+                content: `Adın Neura AI. Geliştiricin Arel. Kullanıcı adı: ${currentUser.displayName}.` 
             };
 
             try {
                 const response = await fetch(WORKER_URL, {
                     method: "POST",
-                    mode: 'cors',
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ messages: [systemPrompt, ...session.messages] })
+                    body: JSON.stringify({ messages: [systemPrompt, ...updatedMessages] })
                 });
 
                 const data = await response.json();
-                if (data.choices && data.choices[0]) {
-                    addMessageToSession('assistant', data.choices[0].message.content);
-                } else {
-                    throw new Error("Geçersiz yanıt");
-                }
-            } catch (err) {
-                renderMessage('assistant', "Bağlantı Hatası: Worker'a ulaşılamıyor. Lütfen Worker URL'nizin doğru olduğundan emin olun.");
-            }
-        }
+                const aiMsg = data.choices[0].message.content;
 
-        function addMessageToSession(role, content) {
-            const session = sessions.find(s => s.id === currentSessionId);
-            session.messages.push({ role, content });
-            saveData(currentSessionId);
-            renderMessage(role, content);
+                const finalMessages = [...updatedMessages, { role: "assistant", content: aiMsg }];
+                
+                await db.collection('users').doc(currentUser.uid).collection('sessions').doc(currentSessionId).update({
+                    messages: finalMessages,
+                    title: session.messages.length === 0 ? text.substring(0, 25) : session.title
+                });
+
+                renderMessage('assistant', aiMsg);
+            } catch (err) {
+                renderMessage('assistant', "Bağlantı hatası: Mesaj buluta kaydedilemedi.");
+            }
         }
 
         function renderMessage(role, content) {
@@ -147,24 +208,15 @@
 
         function renderSessionList() {
             const list = document.getElementById('sessionList');
-            list.innerHTML = "";
+            list.innerHTML = `<h3 style="font-size:0.7rem; color:#64748b; text-transform:uppercase; margin-bottom:10px;">Sohbet Geçmişi</h3>`;
             sessions.forEach(s => {
                 const div = document.createElement('div');
                 div.className = `session-item ${s.id === currentSessionId ? 'active' : ''}`;
-                div.innerText = s.title;
-                div.onclick = () => { loadSession(s.id); toggleMenu(); };
+                div.style = `padding:12px; background:rgba(255,255,255,0.05); margin-bottom:8px; border-radius:10px; cursor:pointer; font-size:0.85rem; border:1px solid ${s.id === currentSessionId ? 'var(--accent)' : 'transparent'}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`;
+                div.innerHTML = `<i class="far fa-comment-dots" style="margin-right:8px;"></i> ${s.title}`;
+                div.onclick = () => { loadSession(s.id); document.getElementById('sidebar').classList.remove('active'); };
                 list.appendChild(div);
             });
-        }
-
-        function saveData(id) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
-            renderSessionList();
-        }
-
-        function clearAllData() {
-            localStorage.clear();
-            location.reload();
         }
 
         document.getElementById('userInput').addEventListener('keypress', (e) => { if(e.key === 'Enter') sendMessage(); });
