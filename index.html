@@ -6,153 +6,51 @@
     <title>Neura AI | Arel</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root {
-            --bg-color: #0f172a;
-            --panel-color: #1e293b;
-            --accent-color: #3b82f6;
-            --text-main: #f8fafc;
-            --text-dim: #94a3b8;
-        }
+        :root { --bg: #0f172a; --panel: #1e293b; --accent: #3b82f6; --text: #f8fafc; }
+        body { background-color: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
 
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            font-family: 'Inter', sans-serif;
-            margin: 0;
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        /* Hamburger Menü (Sidebar) */
+        /* Gelişmiş Hamburger Menü */
         .sidebar {
-            position: fixed;
-            left: -280px;
-            top: 0;
-            width: 260px;
-            height: 100%;
-            background: var(--panel-color);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 1000;
-            border-right: 1px solid #334155;
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
+            position: fixed; left: -280px; top: 0; width: 260px; height: 100%;
+            background: var(--panel); transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000; border-right: 1px solid #334155; display: flex; flex-direction: column; padding: 20px;
         }
-
-        .sidebar.active {
-            left: 0;
-            box-shadow: 10px 0 30px rgba(0,0,0,0.5);
-        }
-
+        .sidebar.active { left: 0; box-shadow: 10px 0 30px rgba(0,0,0,0.5); }
+        
         .menu-toggle {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            z-index: 1100;
-            background: var(--panel-color);
-            border: 1px solid #334155;
-            color: white;
-            padding: 10px 15px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: 0.3s;
+            position: fixed; top: 20px; left: 20px; z-index: 1100;
+            background: var(--panel); border: 1px solid #334155; color: white;
+            padding: 10px 15px; border-radius: 8px; cursor: pointer;
         }
 
-        .menu-toggle:hover { background: var(--accent-color); }
-
-        /* Sidebar İçerik */
-        .sidebar h2 { font-size: 1.2rem; color: var(--accent-color); margin-bottom: 25px; border-bottom: 1px solid #334155; padding-bottom: 10px; }
-        .sidebar h3 { font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; margin-top: 20px; }
+        /* Düzenli Sohbet Geçmişi */
+        .sidebar h2 { font-size: 1.2rem; color: var(--accent); margin-bottom: 20px; }
+        .sidebar h3 { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; margin-top: 20px; letter-spacing: 1px; }
         .history-list { flex: 1; overflow-y: auto; margin-top: 10px; }
         .history-item { 
-            padding: 12px; 
-            background: rgba(15, 23, 42, 0.5); 
-            border-radius: 6px; 
-            margin-bottom: 8px; 
-            font-size: 0.85rem; 
-            cursor: pointer;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            border: 1px solid transparent;
-        }
-        .history-item:hover { border-color: var(--accent-color); background: #1e293b; }
-
-        /* Ana Sohbet Alanı */
-        .main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-            transition: margin-left 0.4s;
+            padding: 10px; background: rgba(15, 23, 42, 0.5); border-radius: 6px; 
+            margin-bottom: 8px; font-size: 0.8rem; cursor: default;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border: 1px solid transparent;
         }
 
-        header {
-            text-align: center;
-            padding: 25px;
-            border-bottom: 1px solid #1e293b;
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(10px);
-        }
+        /* Ana Sohbet Ekranı */
+        .main-content { flex: 1; display: flex; flex-direction: column; width: 100%; }
+        header { text-align: center; padding: 20px; border-bottom: 1px solid #1e293b; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(10px); }
+        #chatBox { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+        
+        .msg { padding: 12px 16px; border-radius: 12px; max-width: 75%; line-height: 1.5; animation: fadeIn 0.3s ease; }
+        .user { background: var(--accent); align-self: flex-end; border-bottom-right-radius: 2px; }
+        .ai { background: var(--panel); align-self: flex-start; border-bottom-left-radius: 2px; border: 1px solid #334155; }
 
-        #chatBox {
-            flex: 1;
-            overflow-y: auto;
-            padding: 30px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
+        /* Giriş */
+        .input-area { padding: 20px; background: var(--bg); border-top: 1px solid #1e293b; }
+        .input-wrapper { max-width: 700px; margin: 0 auto; display: flex; gap: 10px; background: var(--panel); padding: 5px; border-radius: 10px; }
+        input { flex: 1; background: transparent; border: none; color: white; padding: 10px; outline: none; }
+        button#sendBtn { background: var(--accent); border: none; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
 
-        .msg { padding: 15px 20px; border-radius: 15px; max-width: 75%; line-height: 1.6; position: relative; animation: slideUp 0.3s ease; }
-        .user { background: var(--accent-color); align-self: flex-end; border-bottom-right-radius: 2px; }
-        .ai { background: var(--panel-color); align-self: flex-start; border-bottom-left-radius: 2px; border: 1px solid #334155; }
-
-        /* Giriş Alanı */
-        .input-container {
-            padding: 30px;
-            background: linear-gradient(transparent, var(--bg-color));
-        }
-
-        .input-wrapper {
-            max-width: 800px;
-            margin: 0 auto;
-            display: flex;
-            gap: 12px;
-            background: var(--panel-color);
-            padding: 8px;
-            border-radius: 12px;
-            border: 1px solid #334155;
-        }
-
-        input {
-            flex: 1;
-            background: transparent;
-            border: none;
-            color: white;
-            padding: 12px;
-            outline: none;
-            font-size: 1rem;
-        }
-
-        button#sendBtn {
-            background: var(--accent-color);
-            color: white;
-            border: none;
-            padding: 10px 25px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: 0.3s;
-        }
-
-        button#sendBtn:hover { transform: scale(1.05); }
-
-        .overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:999; }
+        .overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; }
         .overlay.active { display:block; }
-
-        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
@@ -161,26 +59,27 @@
     <div class="overlay" onclick="toggleMenu()"></div>
 
     <div class="sidebar" id="sidebar">
-        <h2><i class="fas fa-robot"></i> Neura AI</h2>
-        <h3>Sohbet Geçmişi</h3>
-        <div id="historyList" class="history-list"></div>
+        <h2><i class="fas fa-brain"></i> Neura AI</h2>
+        <h3>Son Etkinlikler</h3>
+        <div id="historyList" class="history-list">
+            </div>
         
-        <h3>Kontrol Paneli</h3>
-        <div class="history-item" onclick="clearChat()"><i class="fas fa-trash"></i> Belleği Temizle</div>
-        <div class="history-item"><i class="fas fa-user-shield"></i> Geliştirici: Arel</div>
+        <h3>Sistem</h3>
+        <div class="history-item" onclick="clearChat()" style="cursor:pointer; color:#f87171;"><i class="fas fa-sync"></i> Sohbeti Sıfırla</div>
+        <div class="history-item"><i class="fas fa-code"></i> Yapımcı: Arel</div>
     </div>
 
     <div class="main-content">
         <header>
-            <h1 style="margin:0; font-size: 1.5rem; letter-spacing: 2px;">NEURA-A-</h1>
-            <span style="font-size: 0.8rem; color: var(--accent-color);">Cloud-Powered Intelligence</span>
+            <h1 style="margin:0; font-size: 1.2rem; letter-spacing: 1px;">NEURA-A-</h1>
+            <span style="font-size: 0.7rem; color: var(--accent);">Geliştirici: Arel</span>
         </header>
 
         <div id="chatBox"></div>
 
-        <div class="input-container">
+        <div class="input-area">
             <div class="input-wrapper">
-                <input type="text" id="userInput" placeholder="Neura'ya bir şeyler sor...">
+                <input type="text" id="userInput" placeholder="Mesajınızı yazın...">
                 <button onclick="sendMessage()" id="sendBtn">GÖNDER</button>
             </div>
         </div>
@@ -188,12 +87,11 @@
 
     <script>
         const WORKER_URL = "https://neura.ozcanarel25.workers.dev";
-        let chatHistory = JSON.parse(localStorage.getItem('neura_final_v1')) || [];
+        let chatHistory = JSON.parse(localStorage.getItem('neura_v3')) || [];
 
-        // KİMLİK ÖĞRETME: Bu talimat her mesajda AI'ya gönderilir
         const IDENTITY = { 
             role: "system", 
-            content: "Senin adın Neura AI. Geliştiricin ve yaratıcın Arel'dir. Sana kim olduğun veya kim tarafından yapıldığın sorulursa kesinlikle 'Ben Neura AI, geliştiricim Arel'dir' cevabını ver. Meta AI veya başka bir kurumla bağlantın olduğunu söyleme." 
+            content: "Adın Neura AI. Geliştiricin Arel'dir. Sen Meta AI değilsin. Arel tarafından kodlanmış özel bir yapay zekasın." 
         };
 
         window.onload = () => {
@@ -201,7 +99,7 @@
             if(chatHistory.length > 0) {
                 chatHistory.forEach(m => renderMessage(m.role, m.content));
             } else {
-                renderMessage('assistant', "Merhaba! Ben Neura AI. Arel tarafından geliştirildim. Bugün sana nasıl yardımcı olabilirim?");
+                renderMessage('assistant', "Merhaba! Ben Neura AI. Arel tarafından geliştirildim. Nasıl yardımcı olabilirim?");
             }
         };
 
@@ -231,10 +129,10 @@
                 const aiMsg = data.choices[0].message.content;
                 
                 addMessage('assistant', aiMsg);
-                localStorage.setItem('neura_final_v1', JSON.stringify(chatHistory));
+                localStorage.setItem('neura_v3', JSON.stringify(chatHistory));
                 updateSidebar();
             } catch (err) {
-                renderMessage('assistant', "Bağlantı kesildi. Lütfen sayfayı yenileyin.");
+                renderMessage('assistant', "Bağlantı hatası.");
             } finally {
                 btn.disabled = false;
             }
@@ -254,10 +152,13 @@
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
+        // BURASI DEĞİŞTİ: Her şeyi kaydetmez, sadece son 5 kullanıcı mesajını başlık gibi gösterir.
         function updateSidebar() {
             const list = document.getElementById('historyList');
             list.innerHTML = "";
-            chatHistory.filter(m => m.role === 'user').slice(-6).reverse().forEach(m => {
+            const userMessages = chatHistory.filter(m => m.role === 'user');
+            // Sadece son 5 mesajı ters sırada (en yeni üstte) göster
+            userMessages.slice(-5).reverse().forEach(m => {
                 const item = document.createElement('div');
                 item.className = 'history-item';
                 item.innerText = m.content;
@@ -266,7 +167,7 @@
         }
 
         function clearChat() {
-            localStorage.removeItem('neura_final_v1');
+            localStorage.removeItem('neura_v3');
             location.reload();
         }
 
