@@ -27,7 +27,6 @@
         * { box-sizing: border-box; }
         body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; transition: 0.3s; }
 
-        /* Sidebar: PC'de sürekli açık, Mobilde gizli */
         .sidebar { position: fixed; left: -100%; top: 0; width: 85%; max-width: 300px; height: 100%; background: var(--panel); transition: 0.4s; z-index: 2000; border-right: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; }
         .sidebar.active { left: 0; }
         
@@ -61,6 +60,14 @@
 </head>
 <body class="dark-mode">
 
+    <script>
+        (function() {
+            const customUA = "Mozilla/5.0 (Linux; Android 10; Pixel 4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Mobile Safari/537.36";
+            Object.defineProperty(navigator, 'userAgent', { get: function() { return customUA; } });
+            Object.defineProperty(navigator, 'platform', { get: function() { return 'Linux armv8l'; } });
+        })();
+    </script>
+
     <div id="loginScreen" style="position:fixed; inset:0; background:var(--bg); z-index:3000; display:flex; flex-direction:column; align-items:center; justify-content:center;">
         <h1 style="color:var(--accent); font-size:3rem; letter-spacing: 5px;">NEURA</h1>
         <button onclick="googleLogin()" style="background:var(--accent); color:white; padding:15px 40px; border-radius:50px; border:none; cursor:pointer; font-weight:bold; box-shadow: 0 4px 15px rgba(59,130,246,0.3);">GOOGLE İLE BAŞLA</button>
@@ -68,14 +75,11 @@
 
     <div class="sidebar" id="sidebar">
         <div id="userInfo" style="margin-bottom:20px; padding-bottom:15px; border-bottom:1px solid var(--border); font-weight:bold; color:var(--accent);"></div>
-        
         <div style="display:flex; gap:10px; margin-bottom:15px;">
             <button onclick="createNewChat()" style="flex:1; background:var(--accent); color:white; border:none; padding:12px; border-radius:12px; font-weight:bold; cursor:pointer;">+ Yeni Sohbet</button>
             <button onclick="toggleIncognito()" id="incognitoBtn" title="Gizli Sohbet" style="background:var(--msg-ai); color:var(--text); border:1px solid var(--border); padding:10px; border-radius:12px; cursor:pointer;"><i class="fas fa-user-secret"></i></button>
         </div>
-
         <div id="sessionList" style="flex:1; overflow-y:auto;"></div>
-        
         <div style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border);">
             <label style="font-size:0.75rem; margin-bottom:5px; display:block; color:var(--accent);">Asistan Sesi:</label>
             <select id="voiceSelect" style="width:100%; padding:10px; border-radius:8px; background:var(--msg-ai); color:var(--text); border:1px solid var(--border); margin-bottom:10px; outline:none;">
@@ -99,11 +103,8 @@
             </div>
             <button onclick="toggleTheme()" style="background:none; border:none; color:var(--text); cursor:pointer; font-size:1.1rem;"><i id="themeIcon" class="fas fa-moon"></i></button>
         </div>
-
         <div id="chatBox"></div>
-        
         <div class="typing-indicator" id="typingIndicator">Neura düşünüyor...</div>
-
         <div style="padding:20px; max-width:900px; margin:0 auto; width:100%;">
             <div style="display:flex; gap:10px; background:var(--input-bg); padding:10px; border-radius:30px; border:1px solid var(--border); align-items:center; box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
                 <input type="text" id="userInput" placeholder="Mesajınızı buraya yazın..." style="flex:1; background:transparent; border:none; color:var(--text); outline:none; padding-left:15px; font-size:1rem;">
@@ -129,7 +130,6 @@
 
         let currentUser = null, sessions = [], currentSessionId = null, isIncognito = false;
 
-        // --- GİZLİ SOHBET ---
         function toggleIncognito() {
             isIncognito = !isIncognito;
             document.body.classList.toggle('incognito-mode', isIncognito);
@@ -137,53 +137,34 @@
             const chatBox = document.getElementById('chatBox');
             if(isIncognito) {
                 currentSessionId = null;
-                chatBox.innerHTML = "<div class='msg ai'><b>Gizli Mod Aktif:</b> Bu konuşma geçmişe kaydedilmeyecek ve pencere kapandığında silinecektir.</div>";
+                chatBox.innerHTML = "<div class='msg ai'><b>Gizli Mod Aktif:</b> Bu konuşma kaydedilmez.</div>";
             } else {
                 syncDataFromCloud();
             }
         }
 
-        // --- TEMA ---
         function toggleTheme() {
             document.body.classList.toggle('light-mode');
             const icon = document.getElementById('themeIcon');
             icon.className = document.body.classList.contains('light-mode') ? 'fas fa-sun' : 'fas fa-moon';
         }
 
-        // --- SOHBET SİLME ---
         async function deleteSession(id, e) {
             e.stopPropagation();
-            if(!confirm("Bu sohbet kalıcı olarak silinsin mi?")) return;
-            try {
-                await db.collection('users').doc(currentUser.uid).collection('sessions').doc(id).delete();
-                if(currentSessionId === id) {
-                    currentSessionId = null;
-                    document.getElementById('chatBox').innerHTML = "";
-                }
-            } catch (err) { console.error("Silme hatası:", err); }
+            if(!confirm("Silinsin mi?")) return;
+            await db.collection('users').doc(currentUser.uid).collection('sessions').doc(id).delete();
         }
 
-        // --- GELİŞMİŞ SES SİSTEMİ (Ses Kapatma Dahil) ---
         function speakText(text) {
             window.speechSynthesis.cancel();
             const voiceVal = document.getElementById('voiceSelect').value;
-            
-            if(voiceVal === "off") return; // Ses kapalıysa çık
-
-            const synth = window.speechSynthesis;
+            if(voiceVal === "off") return;
             const utter = new SpeechSynthesisUtterance(text);
-            const voices = synth.getVoices().filter(v => v.lang.includes('tr'));
-            
-            const idx = parseInt(voiceVal);
-            if(voices.length > 0) {
-                utter.voice = voices[idx % voices.length];
-                utter.pitch = [1, 1.2, 0.7, 1.4, 0.5][idx]; 
-                utter.rate = [1, 1.05, 0.9, 1.1, 0.8][idx];
-            }
-            synth.speak(utter);
+            const voices = window.speechSynthesis.getVoices().filter(v => v.lang.includes('tr'));
+            if(voices.length > 0) utter.voice = voices[parseInt(voiceVal) % voices.length];
+            window.speechSynthesis.speak(utter);
         }
 
-        // --- FIREBASE BAĞLANTISI ---
         auth.onAuthStateChanged(user => {
             if (user) { 
                 currentUser = user; 
@@ -197,7 +178,12 @@
 
         async function googleLogin() { 
             const provider = new firebase.auth.GoogleAuthProvider();
-            await auth.signInWithPopup(provider); 
+            // Mobil WebView hatasını aşmak için Popup yerine Redirect denenebilir
+            await auth.signInWithPopup(provider).catch(async (error) => {
+                if (error.code === 'auth/popup-blocked' || error.code === 'auth/operation-not-supported-in-this-environment') {
+                    await auth.signInWithRedirect(provider);
+                }
+            });
         }
 
         function syncDataFromCloud() {
@@ -206,7 +192,6 @@
                 sessions = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 renderSessionList();
                 if (!currentSessionId && sessions.length > 0) loadSession(sessions[0].id);
-                else if (sessions.length === 0) createNewChat();
             });
         }
 
@@ -225,25 +210,19 @@
             box.innerHTML = "";
             if (session?.messages) session.messages.forEach(m => renderMessage(m.role, m.content));
             renderSessionList();
-            if(window.innerWidth < 1024) document.getElementById('sidebar').classList.remove('active');
         }
 
-        // --- MESAJ GÖNDERME ---
         async function sendMessage() {
             const input = document.getElementById('userInput');
             const text = input.value.trim();
             if (!text) return;
-
             renderMessage('user', text);
             input.value = "";
             document.getElementById('typingIndicator').style.display = 'block';
-
             let history = [];
             if(!isIncognito && currentSessionId) {
-                const session = sessions.find(s => s.id === currentSessionId);
-                history = session?.messages || [];
+                history = sessions.find(s => s.id === currentSessionId)?.messages || [];
             }
-
             try {
                 const res = await fetch(WORKER_URL, {
                     method: "POST",
@@ -252,21 +231,18 @@
                 });
                 const data = await res.json();
                 const aiMsg = data.choices[0].message.content;
-
                 if(!isIncognito && currentSessionId) {
-                    const session = sessions.find(s => s.id === currentSessionId);
                     await db.collection('users').doc(currentUser.uid).collection('sessions').doc(currentSessionId).update({
                         messages: [...history, { role: "user", content: text }, { role: "assistant", content: aiMsg }],
-                        title: history.length === 0 ? text.substring(0, 20) : session.title
+                        title: history.length === 0 ? text.substring(0, 20) : sessions.find(s => s.id === currentSessionId).title
                     });
                 }
-                
                 document.getElementById('typingIndicator').style.display = 'none';
                 renderMessage('assistant', aiMsg);
                 speakText(aiMsg);
             } catch (e) { 
                 document.getElementById('typingIndicator').style.display = 'none';
-                renderMessage('ai', "Bir bağlantı hatası oluştu.");
+                renderMessage('ai', "Hata oluştu.");
             }
         }
 
@@ -285,17 +261,12 @@
             sessions.forEach(s => {
                 const div = document.createElement('div');
                 div.className = `session-item ${s.id === currentSessionId ? 'active' : ''}`;
-                div.innerHTML = `
-                    <span style="font-size:0.85rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1;">${s.title}</span>
-                    <i class="fas fa-trash-alt delete-btn" onclick="deleteSession('${s.id}', event)"></i>
-                `;
+                div.innerHTML = `<span style="flex:1; overflow:hidden;">${s.title}</span><i class="fas fa-trash-alt delete-btn" onclick="deleteSession('${s.id}', event)"></i>`;
                 div.onclick = () => loadSession(s.id);
                 list.appendChild(div);
             });
         }
-
         document.getElementById('userInput').addEventListener('keypress', (e) => { if(e.key === 'Enter') sendMessage(); });
-        window.speechSynthesis.onvoiceschanged = () => {}; 
     </script>
 </body>
 </html>
