@@ -1,47 +1,124 @@
-export default {
-  async fetch(request, env) {
-    // CORS: Sadece senin GitHub Pages sitene veya her yere (*) izin verir
-    const corsHeaders = {
-      "Access-Control-Allow-Origin": "*", 
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-    };
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neura AI | Secure & Private</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root { --bg: #05070a; --panel: #0f172a; --accent: #3b82f6; --text: #e2e8f0; --border: #1e293b; --input-bg: #111827; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        
+        #loginScreen { position:fixed; inset:0; background:var(--bg); z-index:3000; display:flex; align-items:center; justify-content:center; padding: 20px; }
+        .auth-card { background: var(--panel); padding: 40px; border-radius: 28px; border: 1px solid var(--border); width: 100%; max-width: 400px; text-align: center; }
+        .auth-input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 12px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); outline: none; }
+        .auth-btn { width: 100%; padding: 12px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.3s; }
+        
+        #chatBox { flex: 1; overflow-y: auto; padding: 90px 20px 100px; display: flex; flex-direction: column; gap: 15px; }
+        .msg { padding: 14px 18px; border-radius: 18px; max-width: 85%; font-size: 1rem; line-height: 1.4; }
+        .user { background: var(--accent); align-self: flex-end; border-bottom-right-radius: 4px; }
+        .ai { background: var(--panel); align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid var(--border); }
+        
+        .input-container { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 800px; display: flex; gap: 10px; background: var(--input-bg); padding: 10px 18px; border-radius: 30px; border: 1px solid var(--border); }
+        input#userInput { flex: 1; background: transparent; border: none; color: white; outline: none; }
+        .top-nav { position: fixed; top: 0; width: 100%; height: 65px; background: rgba(5,7,10,0.8); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid var(--border); z-index: 1000; }
+    </style>
+</head>
+<body>
 
-    // Ön kontrol isteği (Tarayıcı güvenliği için)
-    if (request.method === "OPTIONS") {
-      return new Response(null, { headers: corsHeaders });
-    }
+    <div id="loginScreen">
+        <div class="auth-card">
+            <h1 style="color:var(--accent); letter-spacing: 3px;">NEURA AI</h1>
+            <input type="email" id="emailInput" class="auth-input" placeholder="E-posta">
+            <input type="password" id="passInput" class="auth-input" placeholder="Şifre">
+            <button onclick="mailLogin()" class="auth-btn" style="background:var(--accent); color:white;">Giriş / Kayıt</button>
+            <button onclick="guestLogin()" class="auth-btn" style="background:transparent; border:1px solid var(--border); color:var(--text);">Misafir Girişi</button>
+        </div>
+    </div>
 
-    try {
-      // Gelen mesajları al
-      const { messages } = await request.json();
+    <div style="flex:1; display:flex; flex-direction:column;">
+        <div class="top-nav">
+            <span style="font-weight:bold; color:var(--accent);">NEURA AI</span>
+            <button onclick="auth.signOut()" style="background:none; border:none; color:#ef4444; cursor:pointer;"><i class="fas fa-sign-out-alt"></i></button>
+        </div>
 
-      // Groq API'sine güvenli çağrı (API KEY BURADA GİZLİ)
-      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${env.API_KEY}`, // Panelden eklediğin Secret
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
-          messages: messages,
-          temperature: 0.7
-        })
-      });
+        <div id="chatBox"></div>
 
-      const data = await response.json();
+        <div class="input-container">
+            <input type="text" id="userInput" placeholder="Mesajınızı yazın..." onkeypress="if(event.key==='Enter') sendMessage()">
+            <button onclick="sendMessage()" style="background:var(--accent); border:none; color:white; width:40px; height:40px; border-radius:50%;"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
 
-      // Yanıtı tarayıcıya geri gönder
-      return new Response(JSON.stringify(data), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
+    <script>
+        // --- AYARLAR ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAstwONxkqv8M-DAUjZ2y5RCEI9h2dEtiw",
+            authDomain: "neura-ai-c7b37.firebaseapp.com",
+            projectId: "neura-ai-c7b37",
+            storageBucket: "neura-ai-c7b37.firebasestorage.app",
+            messagingSenderId: "105155389436",
+            appId: "1:105155389436:web:e77111c9540b1568463479"
+        };
+        const WORKER_URL = "https://neura.ozcanarel25.workers.dev/"; // Buraya Cloudflare Worker URL'ni yapıştır!
 
-    } catch (err) {
-      return new Response(JSON.stringify({ error: "Sistem hatası oluştu." }), {
-        status: 500,
-        headers: corsHeaders
-      });
-    }
-  }
-};
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // --- AUTH ---
+        async function mailLogin() {
+            const e = document.getElementById('emailInput').value;
+            const p = document.getElementById('passInput').value;
+            try { await auth.signInWithEmailAndPassword(e, p); } catch { await auth.createUserWithEmailAndPassword(e, p); }
+        }
+        async function guestLogin() { await auth.signInAnonymously(); }
+        auth.onAuthStateChanged(u => { document.getElementById('loginScreen').style.display = u ? 'none' : 'flex'; });
+
+        // --- MESAJLAŞMA VE VERİ KAYDI ---
+        async function sendMessage() {
+            const input = document.getElementById('userInput');
+            const text = input.value.trim();
+            if(!text) return;
+
+            addMsg(text, 'user');
+            input.value = "";
+
+            try {
+                // 1. Worker'a İstek At (API Key Gizli)
+                const response = await fetch(WORKER_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message: text })
+                });
+                const data = await response.json();
+                const aiResponse = data.choices[0].message.content;
+
+                // 2. Mesajı Firestore'a Kaydet (Senin okuyacağın yer)
+                const user = auth.currentUser;
+                await db.collection("chat_history").add({
+                    email: user.email || "Misafir",
+                    user_query: text,
+                    ai_answer: aiResponse,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                addMsg(aiResponse, 'ai');
+            } catch (err) { addMsg("Hata: Worker bağlantısı kurulamadı.", "ai"); }
+        }
+
+        function addMsg(t, type) {
+            const d = document.createElement('div');
+            d.className = `msg ${type}`;
+            d.innerText = t;
+            const b = document.getElementById('chatBox');
+            b.appendChild(d);
+            b.scrollTop = b.scrollHeight;
+        }
+    </script>
+</body>
+</html>
